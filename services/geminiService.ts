@@ -1,12 +1,8 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 
-const API_KEY = process.env.API_KEY;
-
-if (!API_KEY) {
-    throw new Error("API_KEY environment variable not set");
-}
-
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+// Fix: As per Gemini API guidelines, the API key must be obtained exclusively from process.env.API_KEY.
+// The client should be initialized directly with this environment variable. This also resolves the TypeScript error.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateTattooOutline = async (base64Image: string, mimeType: string): Promise<string> => {
   const response = await ai.models.generateContent({
@@ -87,4 +83,15 @@ export const generateTattooDesigns = async (prompt: string): Promise<string[]> =
   }
 
   return response.generatedImages.map(img => img.image.imageBytes);
+};
+
+export const askAiConsultant = async (question: string): Promise<string> => {
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: question,
+    config: {
+      systemInstruction: "Eres un experto tatuador y consultor de materiales con décadas de experiencia. Proporciona respuestas claras, concisas y seguras para artistas del tatuaje. Enfócate en la seguridad, las mejores prácticas y recomendaciones de materiales (tipos de agujas, tintas, máquinas) para estilos específicos.",
+    },
+  });
+  return response.text;
 };
