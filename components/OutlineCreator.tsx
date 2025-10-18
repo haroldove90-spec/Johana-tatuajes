@@ -4,10 +4,8 @@ import { fileToBase64, dataURLtoFile } from '../utils/fileUtils';
 import { Spinner, DownloadIcon, CameraIcon, PrintIcon, SaveIcon, CloseIcon } from './Icons';
 import { TattooStyle, TATTOO_STYLES } from '../data/gallery';
 import { saveToGallery } from '../utils/galleryUtils';
+import { jsPDF } from 'jspdf';
 
-
-// Type assertion for jspdf from window
-declare const jspdf: any;
 
 export const OutlineCreator: React.FC = () => {
     const [sourceFile, setSourceFile] = useState<File | null>(null);
@@ -92,7 +90,6 @@ export const OutlineCreator: React.FC = () => {
 
     const handleDownloadPdf = () => {
         if (!resultUrl) return;
-        const { jsPDF } = jspdf;
         // jsPDF uses mm, so convert cm to mm
         const widthMm = parseFloat(calculatedWidth) * 10;
         const heightMm = outlineHeight * 10;

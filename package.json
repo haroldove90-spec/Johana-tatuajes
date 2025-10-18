@@ -2,14 +2,11 @@
   "name": "johana-tatuajes-app",
   "private": true,
   "version": "1.0.0",
-  "homepage": "https://<TU-USUARIO-DE-GITHUB>.github.io/johana-tatuajes-app/",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@google/genai": "^1.21.0",
@@ -21,7 +18,6 @@
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.1",
-    "gh-pages": "^6.1.1",
     "typescript": "^5.2.2",
     "vite": "^5.0.8"
   }

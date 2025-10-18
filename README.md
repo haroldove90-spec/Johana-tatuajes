@@ -1,4 +1,4 @@
-# Johana Tatuajes - AI Tattoo Studio Assistant
+# Johana Tatuajes - Asistente de IA para Tatuajes
 
 Esta es una aplicación web creada para la tatuadora Johana, utilizando React, TypeScript y la API de Gemini para proporcionar un conjunto de herramientas de IA que ayudan en el proceso creativo del tatuaje.
 
@@ -13,65 +13,39 @@ Esta es una aplicación web creada para la tatuadora Johana, utilizando React, T
 
 ---
 
-## Despliegue en GitHub Pages
+## Despliegue en Vercel
 
-Sigue estos pasos para publicar tu aplicación en línea usando GitHub Pages.
+Sigue estos pasos para publicar tu aplicación en línea de forma rápida y sencilla con Vercel.
 
 ### 1. Requisitos Previos
 
-*   Asegúrate de tener [Node.js](https://nodejs.org/) y [npm](https://www.npmjs.com/) instalados.
-*   Crea un nuevo repositorio en [GitHub](https://github.com/).
+*   Asegúrate de tener una cuenta en [Vercel](https://vercel.com/) (puedes registrarte con tu cuenta de GitHub).
+*   Sube el código de tu proyecto a un repositorio de [GitHub](https://github.com/).
 
-### 2. Configuración
+### 2. Importar el Proyecto en Vercel
 
-Antes de desplegar, necesitas configurar dos archivos con la información de tu repositorio.
+1.  Inicia sesión en tu panel de Vercel.
+2.  Haz clic en **"Add New..."** y selecciona **"Project"**.
+3.  Busca tu repositorio de GitHub y haz clic en **"Import"**.
+4.  Vercel detectará automáticamente que es un proyecto de Vite y configurará los comandos de construcción (`vite build`) y el directorio de salida (`dist`) por ti. No necesitas cambiar nada en la sección "Build & Development Settings".
 
-1.  **`vite.config.ts`**:
-    *   Abre el archivo `vite.config.ts`.
-    *   Cambia el valor de `base` de `'/johana-tatuajes-app/'` al nombre de tu repositorio, encerrado entre barras. Por ejemplo, si tu repositorio se llama `mi-app-de-tatuajes`, debería ser `base: '/mi-app-de-tatuajes/'`.
+### 3. Configurar la API Key de Gemini (¡Importante!)
 
-2.  **`package.json`**:
-    *   Abre el archivo `package.json`.
-    *   Busca la línea `"homepage": "https://<TU-USUARIO-DE-GITHUB>.github.io/johana-tatuajes-app/",`.
-    *   Reemplaza `<TU-USUARIO-DE-GITHUB>` con tu nombre de usuario de GitHub.
-    *   Reemplaza `johana-tatuajes-app` con el nombre de tu repositorio.
+Para que la aplicación funcione, necesita acceso a tu clave de API de Gemini de forma segura.
 
-### 3. API Key de Gemini
+1.  En la página de configuración del proyecto en Vercel, busca la sección **"Environment Variables"** (Variables de Entorno).
+2.  Crea una nueva variable:
+    *   **Name**: `API_KEY`
+    *   **Value**: Pega aquí tu clave de API de Gemini (la que empieza con `AIzaSy...`).
+3.  Asegúrate de que la variable esté disponible para todos los entornos.
+4.  Haz clic en **"Add"** para guardarla.
 
-**ADVERTENCIA DE SEGURIDAD IMPORTANTE:** Desplegar en GitHub Pages hará que tu API Key de Gemini sea **visible públicamente** en el código de la aplicación. Esto es un riesgo de seguridad significativo, ya que cualquiera podría usar tu clave y generar costos en tu cuenta.
+Al hacer esto, tu clave de API se inyecta de forma segura durante el proceso de construcción y **no queda expuesta** en el código del lado del cliente.
 
-Para un proyecto real, **nunca expongas tu clave de API en el lado del cliente**. La solución recomendada es usar un backend (como un servidor Node.js o una función serverless) que actúe como intermediario para llamar a la API de Gemini de forma segura.
+### 4. Desplegar
 
-Para este despliegue de prueba, puedes proceder bajo tu propio riesgo:
+1.  Una vez configurada la variable de entorno, haz clic en el botón **"Deploy"**.
+2.  Vercel comenzará a construir e implementar tu aplicación. Puedes ver el progreso en los logs.
+3.  Cuando termine, ¡tu aplicación estará en línea! Vercel te proporcionará la URL para que puedas visitarla.
 
-1.  Crea un archivo llamado `.env` en la raíz de tu proyecto.
-2.  Añade tu clave de API dentro de este archivo, así:
-    ```
-    API_KEY="AIzaSy...tu...clave...aqui"
-    ```
-3.  **Importante**: Asegúrate de que el archivo `.env` esté incluido en tu `.gitignore` para no subir tu clave al repositorio público. El despliegue la usará durante el proceso de construcción, pero no será visible en tu código fuente en GitHub.
-
-### 4. Despliegue
-
-Una vez que hayas configurado todo y tu código esté en tu repositorio de GitHub:
-
-1.  Abre tu terminal.
-2.  Instala las dependencias del proyecto si aún no lo has hecho:
-    ```bash
-    npm install
-    ```
-3.  Ejecuta el script de despliegue:
-    ```bash
-    npm run deploy
-    ```
-    Este comando primero construirá tu aplicación y luego la subirá a una rama especial llamada `gh-pages` en tu repositorio.
-
-### 5. Activar GitHub Pages
-
-1.  Ve a tu repositorio de GitHub en el navegador.
-2.  Haz clic en la pestaña "Settings" (Configuración).
-3.  En el menú de la izquierda, selecciona "Pages".
-4.  En la sección "Build and deployment", bajo "Source", selecciona `gh-pages` como la rama desde la que se servirá tu sitio.
-5.  Guarda los cambios.
-
-¡Listo! Después de unos minutos, tu aplicación debería estar disponible en la URL que configuraste en el campo `homepage` de tu `package.json`.
+¡Eso es todo! Cada vez que hagas `push` a la rama principal de tu repositorio, Vercel desplegará automáticamente los cambios.
