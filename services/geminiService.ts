@@ -6,7 +6,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateTattooOutline = async (base64Image: string, mimeType: string): Promise<string> => {
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-image-preview',
+    model: 'gemini-2.5-flash-image',
     contents: {
       parts: [
         {
@@ -21,7 +21,7 @@ export const generateTattooOutline = async (base64Image: string, mimeType: strin
       ],
     },
     config: {
-      responseModalities: [Modality.IMAGE, Modality.TEXT],
+      responseModalities: [Modality.IMAGE],
     },
   });
 
@@ -36,7 +36,7 @@ export const generateTattooOutline = async (base64Image: string, mimeType: strin
 
 export const generateTattooPreview = async (base64Image: string, mimeType: string, bodyPart: string): Promise<string> => {
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-image-preview',
+    model: 'gemini-2.5-flash-image',
     contents: {
       parts: [
         {
@@ -51,7 +51,7 @@ export const generateTattooPreview = async (base64Image: string, mimeType: strin
       ],
     },
     config: {
-      responseModalities: [Modality.IMAGE, Modality.TEXT],
+      responseModalities: [Modality.IMAGE],
     },
   });
     
