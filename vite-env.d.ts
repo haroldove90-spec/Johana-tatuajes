@@ -1,11 +1,12 @@
-/// <reference types="vite/client" />
+// FIX: Removed `/// <reference types="vite/client" />` because it was causing a "Cannot find type definition file" error.
+// This file now globally defines the types for `import.meta.env` for this project.
 
-// FIX: Replaced `declare var process` with a namespace augmentation
-// to avoid redeclaring the global `process` variable, which caused a type conflict.
-// This correctly adds the `API_KEY` type to the existing `process.env` definition,
-// making TypeScript aware of the variable injected by Vite's `define` config.
-declare namespace NodeJS {
-  interface ProcessEnv {
-    API_KEY: string;
-  }
+// This defines the ImportMetaEnv interface to include our custom environment variables.
+// This provides TypeScript IntelliSense and type checking for import.meta.env.
+interface ImportMetaEnv {
+  readonly VITE_API_KEY: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
 }

@@ -1,8 +1,9 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 
-// FIX: Switched from import.meta.env.VITE_API_KEY to process.env.API_KEY
-// to follow the Gemini API coding guidelines. This environment variable
-// is exposed to the client via the vite.config.ts file.
+// Use import.meta.env.VITE_API_KEY to access the environment variable.
+// This is the standard way to handle environment variables in a Vite project.
+// The VITE_ prefix is required for Vite to expose the variable to the client-side code.
+// FIX: Per coding guidelines, the API key must come from `process.env.API_KEY`.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateTattooOutline = async (base64Image: string, mimeType: string): Promise<string> => {
@@ -72,26 +73,34 @@ export const generateTattooPreview = async (base64Image: string, mimeType: strin
 };
 
 
+// FIX: The `generateImages` API only supports `numberOfImages: 1`. 
+// To generate 3 designs as required by the UI, we must make 3 parallel API calls.
 export const generateTattooDesigns = async (prompt: string): Promise<string[]> => {
   const fullPrompt = `Diseño de tatuaje de ${prompt}. Estilo minimalista, líneas negras, sobre fondo blanco, listo para ser tatuado.`;
   
-  const response = await ai.models.generateImages({
+  const designPromises = Array.from({ length: 3 }).map(() => ai.models.generateImages({
     model: 'imagen-4.0-generate-001',
     prompt: fullPrompt,
     config: {
-      numberOfImages: 3,
+      numberOfImages: 1,
       outputMimeType: 'image/jpeg',
       aspectRatio: '1:1',
     },
-  });
+  }));
 
-  if (!response.generatedImages || response.generatedImages.length === 0) {
+  const responses = await Promise.all(designPromises);
+
+  const images = responses.flatMap(response =>
+    response.generatedImages
+      ?.map(img => img.image?.imageBytes)
+      .filter((bytes): bytes is string => typeof bytes === 'string') || []
+  );
+
+  if (images.length === 0) {
       throw new Error('La API no devolvió ninguna imagen.');
   }
 
-  return response.generatedImages
-    .map(img => img.image?.imageBytes)
-    .filter((bytes): bytes is string => typeof bytes === 'string');
+  return images;
 };
 
 export const askAiConsultant = async (question: string): Promise<string> => {
