@@ -1,6 +1,7 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 
-// Fix: Initialized the Gemini API client using `process.env.API_KEY` to adhere to the coding guidelines and resolve the build error.
+// Fix: Per coding guidelines, the API key must be sourced from `process.env.API_KEY`.
+// This change also resolves the TypeScript error 'Property 'env' does not exist on type 'ImportMeta''.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateTattooOutline = async (base64Image: string, mimeType: string): Promise<string> => {
