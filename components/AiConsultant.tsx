@@ -142,7 +142,9 @@ export const AiConsultant: React.FC = () => {
     };
 
     const handleClearHistory = () => {
-        setConversation([]);
+        if (window.confirm('¿Estás seguro de que quieres borrar todo el historial de la conversación? Esta acción no se puede deshacer.')) {
+            setConversation([]);
+        }
     };
 
     return (
