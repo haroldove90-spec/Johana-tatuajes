@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { generateTattooOutline } from '../services/geminiService';
-import { fileToBase64, dataURLtoFile } from '../utils/fileUtils';
-import { Spinner, DownloadIcon, CameraIcon, PrintIcon, SaveIcon, CloseIcon } from './Icons';
+import { fileToBase64 } from '../utils/fileUtils';
+import { Spinner, DownloadIcon, PrintIcon, SaveIcon, CloseIcon } from './Icons';
 import { TattooStyle, TATTOO_STYLES } from '../data/gallery';
 import { saveToGallery } from '../utils/galleryUtils';
 import { jsPDF } from 'jspdf';

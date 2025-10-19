@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { tattooGallery as defaultGallery, Tattoo, TattooStyle, TATTOO_STYLES } from '../data/gallery';
-import { FacebookIcon, InstagramIcon, TikTokIcon, CloseIcon, UploadIcon, CameraIcon, VideoIcon, VideoPlayIcon } from './Icons';
+import { FacebookIcon, InstagramIcon, TikTokIcon, CloseIcon, UploadIcon, VideoPlayIcon } from './Icons';
 
 const GALLERY_STORAGE_KEY = 'johanaTattooGallery';
 type SortOption = 'newest' | 'oldest';
