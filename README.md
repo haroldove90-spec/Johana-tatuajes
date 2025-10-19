@@ -38,13 +38,13 @@ Para que la aplicación pueda comunicarse con la API de Gemini, necesita acceso 
 1.  Dentro de la configuración de tu sitio en Netlify, ve a **Site configuration > Build & deploy > Environment**.
 2.  En la sección **"Environment variables"**, haz clic en **"Edit variables"**.
 3.  Crea una nueva variable con el siguiente nombre y valor:
-    *   **Key**: `VITE_API_KEY`
+    *   **Key**: `API_KEY`
     *   **Value**: Pega aquí tu clave de API de Gemini (la que empieza con `AIzaSy...`).
 4.  Haz clic en **"Save"** para guardarla.
 
-**¿Por qué `VITE_API_KEY`?**
+**¿Cómo funciona la API Key?**
 
-El proyecto utiliza Vite como herramienta de construcción. Por seguridad, Vite solo expone las variables de entorno que comienzan con el prefijo `VITE_` al código que se ejecuta en el navegador. Esto evita que claves secretas se filtren accidentalmente. El código de la aplicación está configurado para leer esta variable específica (`import.meta.env.VITE_API_KEY`).
+El código de la aplicación espera que la clave de la API esté disponible en `process.env.API_KEY`. Durante el proceso de construcción, Vite reemplaza esta variable en el código con el valor de la variable de entorno `API_KEY` que configuraste en Netlify. Este es un método seguro para proporcionar la clave a la aplicación sin escribirla directamente en el código.
 
 ### 4. Desplegar
 

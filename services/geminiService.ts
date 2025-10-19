@@ -1,8 +1,5 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 
-// Use import.meta.env.VITE_API_KEY to access the environment variable.
-// This is the standard way to handle environment variables in a Vite project.
-// The VITE_ prefix is required for Vite to expose the variable to the client-side code.
 // FIX: Per coding guidelines, the API key must come from `process.env.API_KEY`.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
