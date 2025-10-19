@@ -1,7 +1,8 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 
-// Fix: Per coding guidelines, the API key must be sourced from `process.env.API_KEY`.
-// This change also resolves the TypeScript error 'Property 'env' does not exist on type 'ImportMeta''.
+// FIX: Switched from import.meta.env.VITE_API_KEY to process.env.API_KEY
+// to follow the Gemini API coding guidelines. This environment variable
+// is exposed to the client via the vite.config.ts file.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateTattooOutline = async (base64Image: string, mimeType: string): Promise<string> => {
@@ -25,10 +26,12 @@ export const generateTattooOutline = async (base64Image: string, mimeType: strin
     },
   });
 
-  // Added optional chaining to prevent runtime errors if the response structure is unexpected.
-  for (const part of response.candidates?.[0]?.content.parts ?? []) {
-    if (part.inlineData) {
-      return part.inlineData.data;
+  const candidate = response.candidates?.[0];
+  if (candidate?.content?.parts) {
+    for (const part of candidate.content.parts) {
+      if (part.inlineData?.data) {
+        return part.inlineData.data;
+      }
     }
   }
 
@@ -56,10 +59,12 @@ export const generateTattooPreview = async (base64Image: string, mimeType: strin
     },
   });
     
-  // Added optional chaining to prevent runtime errors if the response structure is unexpected.
-  for (const part of response.candidates?.[0]?.content.parts ?? []) {
-    if (part.inlineData) {
-      return part.inlineData.data;
+  const candidate = response.candidates?.[0];
+  if (candidate?.content?.parts) {
+    for (const part of candidate.content.parts) {
+      if (part.inlineData?.data) {
+        return part.inlineData.data;
+      }
     }
   }
 
@@ -84,7 +89,9 @@ export const generateTattooDesigns = async (prompt: string): Promise<string[]> =
       throw new Error('La API no devolvió ninguna imagen.');
   }
 
-  return response.generatedImages.map(img => img.image.imageBytes);
+  return response.generatedImages
+    .map(img => img.image?.imageBytes)
+    .filter((bytes): bytes is string => typeof bytes === 'string');
 };
 
 export const askAiConsultant = async (question: string): Promise<string> => {
@@ -95,5 +102,11 @@ export const askAiConsultant = async (question: string): Promise<string> => {
       systemInstruction: "Eres un experto tatuador y consultor de materiales con décadas de experiencia. Proporciona respuestas claras, concisas y seguras para artistas del tatuaje. Enfócate en la seguridad, las mejores prácticas y recomendaciones de materiales (tipos de agujas, tintas, máquinas) para estilos específicos.",
     },
   });
-  return response.text;
+  
+  const text = response.text;
+  if (typeof text === 'string') {
+    return text;
+  }
+
+  throw new Error('La IA no generó una respuesta de texto.');
 };

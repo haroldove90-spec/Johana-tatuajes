@@ -1,4 +1,3 @@
-import { Appointment } from '../components/Calendar';
 import { Client } from '../types';
 
 const DB_NAME = 'JohanaTatuajesDB';
