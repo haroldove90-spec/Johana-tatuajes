@@ -31,16 +31,16 @@ Sigue estos pasos para publicar tu aplicación en línea de forma rápida y senc
 
 ### 3. Configurar la API Key de Gemini (¡Importante!)
 
-Para que la aplicación funcione, necesita acceso a tu clave de API de Gemini de forma segura.
+Para que la aplicación funcione, necesita acceso a tu clave de API de Gemini de forma segura. Vite, el sistema de construcción que usa este proyecto, tiene una característica de seguridad: solo las variables de entorno que comienzan con `VITE_` son accesibles en el código de la aplicación para proteger tu clave.
 
 1.  En la página de configuración del proyecto en Vercel, busca la sección **"Environment Variables"** (Variables de Entorno).
 2.  Crea una nueva variable:
-    *   **Name**: `API_KEY`
+    *   **Name**: `VITE_API_KEY`
     *   **Value**: Pega aquí tu clave de API de Gemini (la que empieza con `AIzaSy...`).
 3.  Asegúrate de que la variable esté disponible para todos los entornos.
 4.  Haz clic en **"Add"** para guardarla.
 
-Al hacer esto, tu clave de API se inyecta de forma segura durante el proceso de construcción y **no queda expuesta** en el código del lado del cliente.
+Al usar el prefijo `VITE_`, le indicas a Vercel y Vite que es seguro exponer esta clave al navegador para que la aplicación pueda comunicarse con la API de Gemini.
 
 ### 4. Desplegar
 
