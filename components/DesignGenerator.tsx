@@ -12,6 +12,7 @@ export const DesignGenerator: React.FC = () => {
     
     // Save to Gallery Modal state
     const [imageToSave, setImageToSave] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
     const [saveData, setSaveData] = useState({ title: '', description: '', style: 'Realismo' as TattooStyle });
     const [saveSuccess, setSaveSuccess] = useState('');
 
@@ -56,15 +57,16 @@ export const DesignGenerator: React.FC = () => {
         setImageToSave(null);
     };
 
-    const handleSaveToGallery = (e: React.FormEvent) => {
+    const handleSaveToGallery = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!imageToSave || !saveData.title.trim()) {
             alert("El título es obligatorio.");
             return;
         }
 
+        setIsSaving(true);
         try {
-            saveToGallery({
+            await saveToGallery({
                 src: imageToSave,
                 alt: saveData.title,
                 description: saveData.description,
@@ -78,6 +80,8 @@ export const DesignGenerator: React.FC = () => {
         } catch (error) {
             console.error(error);
             alert((error as Error).message || "No se pudo guardar la imagen.");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -172,7 +176,10 @@ export const DesignGenerator: React.FC = () => {
                                 </div>
                                 <div className="flex justify-end gap-4 pt-2">
                                     <button type="button" onClick={handleCloseSaveModal} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded-md font-semibold">Cancelar</button>
-                                    <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded-md font-semibold hover:bg-purple-700">Guardar</button>
+                                     <button type="submit" disabled={isSaving} className="px-4 py-2 bg-purple-600 text-white rounded-md font-semibold hover:bg-purple-700 disabled:bg-purple-400 flex items-center justify-center">
+                                        {isSaving && <Spinner />}
+                                        <span className={isSaving ? 'ml-2' : ''}>Guardar</span>
+                                    </button>
                                 </div>
                             </form>
                         )}

@@ -7,3 +7,14 @@ export interface Client {
     notes: string;
     createdAt: string; // ISO string date
 }
+
+export interface Appointment {
+    id: number;
+    date: string; // YYYY-MM-DD
+    time: string; // HH:MM
+    name: string;
+    contact: string;
+    idea: string;
+    reminderMethod: 'email' | 'sms';
+    status: 'scheduled' | 'completed';
+}

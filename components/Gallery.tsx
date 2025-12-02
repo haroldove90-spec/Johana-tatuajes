@@ -1,19 +1,22 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { tattooGallery as defaultGallery, Tattoo, TattooStyle, TATTOO_STYLES } from '../data/gallery';
-import { FacebookIcon, InstagramIcon, TikTokIcon, CloseIcon, UploadIcon, VideoPlayIcon } from './Icons';
+import { Tattoo, TattooStyle, TATTOO_STYLES } from '../data/gallery';
+import { FacebookIcon, InstagramIcon, TikTokIcon, CloseIcon, UploadIcon, VideoPlayIcon, Spinner } from './Icons';
+import { supabase } from '../utils/supabase';
+import { saveToGallery } from '../utils/galleryUtils';
 
-const GALLERY_STORAGE_KEY = 'johanaTattooGallery';
 type SortOption = 'newest' | 'oldest';
 
 export const Gallery: React.FC = () => {
     // --- State ---
     const [galleryItems, setGalleryItems] = useState<Tattoo[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [filterStyle, setFilterStyle] = useState<TattooStyle | 'all'>('all');
     const [sortOrder, setSortOrder] = useState<SortOption>('newest');
     const [selectedItem, setSelectedItem] = useState<Tattoo | null>(null);
 
     // State for adding new media
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [newMediaSrc, setNewMediaSrc] = useState<string | null>(null);
     const [newMediaType, setNewMediaType] = useState<'image' | 'video'>('image');
     const [newMediaData, setNewMediaData] = useState({
@@ -23,27 +26,25 @@ export const Gallery: React.FC = () => {
     });
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // --- Persistence ---
+    // --- Data Fetching ---
     useEffect(() => {
-        try {
-            const savedGallery = localStorage.getItem(GALLERY_STORAGE_KEY);
-            if (savedGallery) {
-                setGalleryItems(JSON.parse(savedGallery));
-            } else {
-                setGalleryItems(defaultGallery);
-            }
-        } catch (err)
- {
-            console.error("Error loading gallery from localStorage:", err);
-            setGalleryItems(defaultGallery);
-        }
+        loadGallery();
     }, []);
 
-    useEffect(() => {
-        if (galleryItems.length > 0) {
-            localStorage.setItem(GALLERY_STORAGE_KEY, JSON.stringify(galleryItems));
+    const loadGallery = async () => {
+        setIsLoading(true);
+        try {
+            const { data, error } = await supabase.from('gallery').select('*');
+            if (error) throw error;
+            if (data) {
+                setGalleryItems(data as Tattoo[]);
+            }
+        } catch (err) {
+            console.error("Error loading gallery from Supabase:", err);
+        } finally {
+            setIsLoading(false);
         }
-    }, [galleryItems]);
+    };
 
     const filteredAndSortedGallery = useMemo(() => {
         let items = [...galleryItems];
@@ -73,7 +74,7 @@ export const Gallery: React.FC = () => {
         if (e.target) e.target.value = '';
     };
 
-    const handleSaveNewMedia = (e: React.FormEvent) => {
+    const handleSaveNewMedia = async (e: React.FormEvent) => {
         e.preventDefault();
         const { alt, description, style } = newMediaData;
         
@@ -82,18 +83,23 @@ export const Gallery: React.FC = () => {
             return;
         }
 
-        const newTattoo: Tattoo = {
-            id: Date.now(),
-            src: newMediaSrc,
-            alt,
-            description,
-            style,
-            date: new Date().toISOString().split('T')[0],
-            type: newMediaType,
-        };
-
-        setGalleryItems(prevItems => [newTattoo, ...prevItems]);
-        closeAddModal();
+        setIsSaving(true);
+        try {
+            await saveToGallery({
+                src: newMediaSrc,
+                alt,
+                description,
+                style,
+                type: newMediaType,
+            });
+            closeAddModal();
+            await loadGallery(); // Refresh gallery
+        } catch (error) {
+            console.error(error);
+            alert((error as Error).message || "No se pudo guardar la imagen.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const closeAddModal = () => {
@@ -180,26 +186,30 @@ export const Gallery: React.FC = () => {
             </div>
 
             {/* Gallery Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {filteredAndSortedGallery.map((item) => (
-                    <div key={item.id} className="group relative aspect-square cursor-pointer bg-black rounded-lg" onClick={() => setSelectedItem(item)}>
-                        {item.type === 'video' ? (
-                            <video src={item.src} className="w-full h-full object-cover rounded-lg" autoPlay loop muted playsInline />
-                        ) : (
-                            <img src={item.src} alt={item.alt} className="w-full h-full object-cover rounded-lg"/>
-                        )}
-                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-                            {item.type === 'video' && <VideoPlayIcon />}
-                            <p className="text-white text-center p-2 text-sm">{item.alt}</p>
+            {isLoading ? (
+                <div className="flex justify-center items-center py-10">
+                    <Spinner />
+                </div>
+            ) : filteredAndSortedGallery.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {filteredAndSortedGallery.map((item) => (
+                        <div key={item.id} className="group relative aspect-square cursor-pointer bg-black rounded-lg" onClick={() => setSelectedItem(item)}>
+                            {item.type === 'video' ? (
+                                <video src={item.src} className="w-full h-full object-cover rounded-lg" autoPlay loop muted playsInline />
+                            ) : (
+                                <img src={item.src} alt={item.alt} className="w-full h-full object-cover rounded-lg"/>
+                            )}
+                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                                {item.type === 'video' && <VideoPlayIcon />}
+                                <p className="text-white text-center p-2 text-sm">{item.alt}</p>
+                            </div>
                         </div>
-                    </div>
-                ))}
-            </div>
-            
-            {filteredAndSortedGallery.length === 0 && (
+                    ))}
+                </div>
+            ) : (
                 <p className="text-center text-gray-500 py-8">No se encontraron trabajos. ¡Añade tu primero!</p>
             )}
-
+            
             {/* Add Media Modal */}
             {isAddModalOpen && newMediaSrc && (
                 <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={closeAddModal}>
@@ -218,7 +228,10 @@ export const Gallery: React.FC = () => {
                             </select>
                             <div className="flex justify-end gap-4 pt-2">
                                 <button type="button" onClick={closeAddModal} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded-md font-semibold">Cancelar</button>
-                                <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded-md font-semibold hover:bg-purple-700">Guardar</button>
+                                <button type="submit" disabled={isSaving} className="px-4 py-2 bg-purple-600 text-white rounded-md font-semibold hover:bg-purple-700 disabled:bg-purple-400 flex items-center justify-center">
+                                    {isSaving && <Spinner />}
+                                    <span className={isSaving ? 'ml-2' : ''}>Guardar</span>
+                                </button>
                             </div>
                         </form>
                     </div>

@@ -1,17 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { PencilIcon, TrashIcon, CheckIcon } from './Icons';
 import { getAll, add, put, deleteItem, findOrAddClient } from '../utils/db';
-
-export interface Appointment {
-    id: number;
-    date: string; // YYYY-MM-DD
-    time: string; // HH:MM
-    name: string;
-    contact: string;
-    idea: string;
-    reminderMethod: 'email' | 'sms';
-    status: 'scheduled' | 'completed';
-}
+import { Appointment } from '../types';
 
 export const Calendar: React.FC = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
