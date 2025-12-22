@@ -1,9 +1,11 @@
-import { GoogleGenAI, Modality } from "@google/genai";
 
-// FIX: Per coding guidelines, the API key must come from `process.env.API_KEY`.
+import { GoogleGenAI } from "@google/genai";
+
+// Always initialize with apiKey from process.env.API_KEY
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateTattooOutline = async (base64Image: string, mimeType: string): Promise<string> => {
+  // Use gemini-2.5-flash-image for image manipulation tasks
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
     contents: {
@@ -18,9 +20,6 @@ export const generateTattooOutline = async (base64Image: string, mimeType: strin
           text: 'Crea solo el trazo de este dibujo para un tatuaje, en fondo blanco y con líneas negras bien definidas. El resultado debe ser una imagen limpia y clara, ideal para usar como plantilla de tatuaje.',
         },
       ],
-    },
-    config: {
-      responseModalities: [Modality.IMAGE],
     },
   });
 
@@ -37,6 +36,7 @@ export const generateTattooOutline = async (base64Image: string, mimeType: strin
 };
 
 export const generateTattooPreview = async (base64Image: string, mimeType: string, bodyPart: string): Promise<string> => {
+  // Use gemini-2.5-flash-image for image manipulation tasks
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
     contents: {
@@ -52,9 +52,6 @@ export const generateTattooPreview = async (base64Image: string, mimeType: strin
         },
       ],
     },
-    config: {
-      responseModalities: [Modality.IMAGE],
-    },
   });
     
   const candidate = response.candidates?.[0];
@@ -69,12 +66,10 @@ export const generateTattooPreview = async (base64Image: string, mimeType: strin
   throw new Error(`No se pudo generar la vista previa para ${bodyPart}. La IA no devolvió una imagen.`);
 };
 
-
-// FIX: The `generateImages` API only supports `numberOfImages: 1`. 
-// To generate 3 designs as required by the UI, we must make 3 parallel API calls.
 export const generateTattooDesigns = async (prompt: string): Promise<string[]> => {
   const fullPrompt = `Diseño de tatuaje de ${prompt}. Estilo minimalista, líneas negras, sobre fondo blanco, listo para ser tatuado.`;
   
+  // imagen-4.0-generate-001 supports numberOfImages: 1. Making 3 parallel calls to get 3 designs as required by UI.
   const designPromises = Array.from({ length: 3 }).map(() => ai.models.generateImages({
     model: 'imagen-4.0-generate-001',
     prompt: fullPrompt,
@@ -101,8 +96,9 @@ export const generateTattooDesigns = async (prompt: string): Promise<string[]> =
 };
 
 export const askAiConsultant = async (question: string): Promise<string> => {
+  // Use gemini-3-pro-preview for complex reasoning and expert consultation tasks
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3-pro-preview",
     contents: question,
     config: {
       systemInstruction: "Eres un experto tatuador y consultor de materiales con décadas de experiencia. Proporciona respuestas claras, concisas y seguras para artistas del tatuaje. Enfócate en la seguridad, las mejores prácticas y recomendaciones de materiales (tipos de agujas, tintas, máquinas) para estilos específicos.",
