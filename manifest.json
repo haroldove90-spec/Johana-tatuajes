@@ -1,0 +1,25 @@
+
+{
+  "name": "Bribiesca Studio",
+  "short_name": "Bribiesca",
+  "description": "Studio & Beauty Artist - Tattoo and Design AI Assistant",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#E815DC",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://tritex.com.mx/Bribiesca%20logo%2002.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://tritex.com.mx/Bribiesca%20logo%2002.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

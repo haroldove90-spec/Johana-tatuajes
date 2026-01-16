@@ -1,40 +1,64 @@
 
-import React from 'react';
-import { CheckIcon } from './Icons';
+import React, { useState } from 'react';
+import { CheckIcon, CareIcon } from './Icons';
 
 export const AftercareGuide: React.FC = () => {
+    const [activeStep, setActiveStep] = useState(0);
+
     const steps = [
-        { day: 'Día 1-3', title: 'Limpieza Crítica', desc: 'Lava 3 veces al día con jabón neutro. No talles.', color: 'blue' },
-        { day: 'Día 4-10', title: 'Hidratación', desc: 'Aplica una capa delgada de crema cicatrizante cada 4 horas.', color: 'green' },
-        { day: 'Día 11-30', title: 'Protección Solar', desc: 'Evita el sol directo y piscinas por completo.', color: 'purple' },
+        { day: 'Día 1-3', title: 'Higiene Crítica', desc: 'Lava tu tatuaje 3 veces al día con jabón neutro. Usa tus manos limpias, nunca esponjas. Seca con toques suaves de papel absorbente.', detail: 'Evita el sol y no sumerjas el tatuaje en piscinas o mar.' },
+        { day: 'Día 4-10', title: 'Hidratación PRO', desc: 'Aplica una capa muy delgada de pomada recomendada 3-4 veces al día. La piel debe verse hidratada, no empapada.', detail: 'Si sientes picazón, no rasques. Golpea suavemente la zona.' },
+        { day: 'Día 11-30', title: 'Protección Total', desc: 'Tu piel ya sanó por fuera, pero sigue sanando por dentro. Usa bloqueador solar de alta protección si vas a estar en exteriores.', detail: 'El sol es el mayor enemigo de los pigmentos. Cuídalo de por vida.' },
     ];
 
+    const simulateReminder = () => {
+        alert("🔔 RECORDATORIO ENVIADO: Es hora de lavar tu tatuaje y aplicar una capa ligera de crema. ¡Mantén esa pieza impecable!");
+    };
+
     return (
-        <div className="space-y-8 max-w-lg mx-auto">
+        <div className="space-y-8 animate-fade-in max-w-lg mx-auto">
             <header className="text-center">
-                <h2 className="text-3xl font-black mb-2">Manual de Curación</h2>
-                <p className="text-gray-500">Sigue estos pasos para que tu tattoo luzca increíble por años.</p>
+                <div className="inline-block p-4 bg-brand/10 border border-brand/20 rounded-full mb-4">
+                    <CareIcon className="w-8 h-8 text-brand" />
+                </div>
+                <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Manual Post-Tattoo</h2>
+                <p className="text-[10px] text-brand font-black uppercase tracking-widest mt-1">Sigue estos pasos para un resultado perfecto</p>
             </header>
 
             <div className="space-y-4">
                 {steps.map((step, idx) => (
-                    <div key={idx} className="flex gap-6 items-start relative p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl">
-                        <div className={`w-12 h-12 rounded-2xl bg-${step.color}-100 dark:bg-${step.color}-900/20 text-${step.color}-600 flex-shrink-0 flex items-center justify-center font-black`}>
-                            {idx + 1}
+                    <div 
+                        key={idx} 
+                        onClick={() => setActiveStep(idx)}
+                        className={`p-6 bg-[#050505] border rounded-[2rem] transition-all cursor-pointer shadow-2xl ${activeStep === idx ? 'border-brand/40' : 'border-white/5'}`}
+                    >
+                        <div className="flex justify-between items-start mb-4">
+                            <span className="text-[9px] font-black uppercase text-brand tracking-widest">{step.day}</span>
+                            {activeStep === idx && <CheckIcon className="w-4 h-4 text-brand" />}
                         </div>
-                        <div>
-                            <span className="text-xs font-bold uppercase tracking-widest text-purple-600 mb-1 block">{step.day}</span>
-                            <h4 className="text-xl font-black mb-1">{step.title}</h4>
-                            <p className="text-gray-500 text-sm leading-relaxed">{step.desc}</p>
-                        </div>
+                        <h4 className="text-lg font-black text-white uppercase tracking-tight mb-2 italic">{step.title}</h4>
+                        <p className="text-sm text-gray-400 leading-relaxed font-medium">{step.desc}</p>
+                        
+                        {activeStep === idx && (
+                            <div className="mt-4 pt-4 border-t border-white/5 animate-fade-in">
+                                <p className="text-[10px] text-gray-500 font-bold leading-relaxed">{step.detail}</p>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
 
-            <div className="p-6 bg-purple-600 rounded-3xl text-white text-center">
-                <h4 className="font-black mb-2">¿Dudas Urgentes?</h4>
-                <p className="text-sm opacity-90 mb-4">Usa nuestro chat directo o consulta al asistente IA.</p>
-                <button className="w-full bg-white text-purple-600 py-3 rounded-2xl font-bold">Abrir Chat Directo</button>
+            <button 
+                onClick={simulateReminder}
+                className="w-full py-5 bg-brand text-white font-black rounded-2xl uppercase tracking-widest shadow-[0_0_30px_rgba(232,21,220,0.3)] hover:scale-[1.02] active:scale-95 transition-all text-xs"
+            >
+                Activar Notificaciones de Cuidado
+            </button>
+
+            <div className="p-8 bg-brand/5 border border-brand/20 rounded-[2.5rem] text-center">
+                <h5 className="text-[10px] font-black text-white uppercase tracking-widest mb-2">¿Algo no va bien?</h5>
+                <p className="text-[10px] text-gray-500 font-bold mb-4 italic">Si notas enrojecimiento excesivo o calor en la zona, contáctanos de inmediato.</p>
+                <button className="text-[9px] font-black text-brand uppercase border-b-2 border-brand/20 hover:border-brand transition-all">Chat Directo con el Artista</button>
             </div>
         </div>
     );

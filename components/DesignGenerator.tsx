@@ -1,188 +1,131 @@
+
 import React, { useState, useCallback } from 'react';
 import { generateTattooDesigns } from '../services/geminiService';
-import { Spinner, DownloadIcon, SaveIcon, CloseIcon } from './Icons';
+import { Spinner, DownloadIcon, SaveIcon, CloseIcon, StarIcon } from './Icons';
 import { TattooStyle, TATTOO_STYLES } from '../data/gallery';
 import { saveToGallery } from '../utils/galleryUtils';
 
 export const DesignGenerator: React.FC = () => {
     const [prompt, setPrompt] = useState<string>('');
+    const [quality, setQuality] = useState<'fast' | 'pro'>('fast');
     const [results, setResults] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     
-    // Save to Gallery Modal state
     const [imageToSave, setImageToSave] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [saveData, setSaveData] = useState({ title: '', description: '', style: 'Realismo' as TattooStyle });
     const [saveSuccess, setSaveSuccess] = useState('');
 
-
     const handleGenerate = useCallback(async () => {
         if (!prompt.trim()) {
-            setError('Por favor, describe el tatuaje que deseas.');
+            setError('Describe el diseño.');
             return;
         }
+
+        if (quality === 'pro') {
+            const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+            if (!hasKey) {
+                await (window as any).aistudio.openSelectKey();
+                // Proseguir asumiendo que el usuario seleccionó la llave
+            }
+        }
+
         setIsLoading(true);
         setError(null);
         setResults([]);
 
         try {
-            const designs = await generateTattooDesigns(prompt);
+            const designs = await generateTattooDesigns(prompt, quality);
             setResults(designs);
         } catch (err) {
-            setError('Hubo un error al generar los diseños. Inténtalo de nuevo.');
+            setError('Error en la generación. Los modelos Pro requieren una API Key de pago.');
             console.error(err);
         } finally {
             setIsLoading(false);
         }
-    }, [prompt]);
-
-    const handleDownload = (base64Image: string, index: number) => {
-        const link = document.createElement('a');
-        link.href = `data:image/jpeg;base64,${base64Image}`;
-        link.download = `diseno-tatuaje-${index + 1}.jpeg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    // --- Save to Gallery Logic ---
-    const handleOpenSaveModal = (base64Image: string) => {
-        setSaveSuccess('');
-        setSaveData({ title: '', description: '', style: 'Realismo' as TattooStyle });
-        setImageToSave(`data:image/jpeg;base64,${base64Image}`);
-    };
-    
-    const handleCloseSaveModal = () => {
-        setImageToSave(null);
-    };
-
-    const handleSaveToGallery = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!imageToSave || !saveData.title.trim()) {
-            alert("El título es obligatorio.");
-            return;
-        }
-
-        setIsSaving(true);
-        try {
-            await saveToGallery({
-                src: imageToSave,
-                alt: saveData.title,
-                description: saveData.description,
-                style: saveData.style,
-                type: 'image',
-            });
-            setSaveSuccess('¡Diseño guardado en la galería con éxito!');
-            setTimeout(() => {
-                handleCloseSaveModal();
-            }, 2000);
-        } catch (error) {
-            console.error(error);
-            alert((error as Error).message || "No se pudo guardar la imagen.");
-        } finally {
-            setIsSaving(false);
-        }
-    };
+    }, [prompt, quality]);
 
     return (
-        <div className="space-y-6">
-            <div>
-                <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Describe el diseño del tatuaje que quieres:
-                </label>
+        <div className="space-y-8 animate-fade-in">
+            <header>
+                <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase">Generador de Arte</h2>
+                <p className="text-[10px] text-brand font-black uppercase tracking-widest mt-1">IA Generativa de Vanguardia</p>
+            </header>
+
+            <div className="bg-[#050505] p-8 rounded-[2.5rem] border border-white/5 shadow-2xl space-y-6">
                 <textarea
-                    id="prompt"
-                    rows={3}
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    className="w-full p-3 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-purple-500 focus:border-purple-500"
-                    placeholder="Ej: un león con corona y rosas, estilo geométrico"
+                    className="w-full p-6 bg-black border border-white/10 rounded-3xl font-bold text-white placeholder-gray-700 focus:border-brand transition-all outline-none h-32"
+                    placeholder="Ej: Un samurái cyberpunk con detalles en neón púrpura, estilo geométrico..."
                 />
-            </div>
 
-            <div className="text-center">
+                <div className="flex gap-4">
+                    <button 
+                        onClick={() => setQuality('fast')}
+                        className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${quality === 'fast' ? 'bg-white text-black border-white' : 'bg-black text-gray-500 border-white/10'}`}
+                    >
+                        Boceto Rápido
+                    </button>
+                    <button 
+                        onClick={() => setQuality('pro')}
+                        className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border flex items-center justify-center gap-2 ${quality === 'pro' ? 'bg-brand text-white border-brand shadow-[0_0_20px_rgba(232,21,220,0.4)]' : 'bg-black text-gray-500 border-white/10'}`}
+                    >
+                        <StarIcon className="w-4 h-4" /> Calidad Pro (1K)
+                    </button>
+                </div>
+
                 <button
                     onClick={handleGenerate}
                     disabled={isLoading}
-                    className="inline-flex items-center justify-center px-8 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-purple-600 hover:bg-purple-700 disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors"
+                    className="w-full py-6 bg-white text-black font-black rounded-3xl uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all disabled:opacity-20 text-xs"
                 >
-                    {isLoading ? <><Spinner /> <span className="ml-2">Generando...</span></> : 'Generar 3 Diseños'}
+                    {isLoading ? <Spinner /> : 'CREAR DISEÑO'}
                 </button>
             </div>
             
-            {error && <p className="text-red-500 text-center">{error}</p>}
-
-            {isLoading && (
-                 <div className="text-center text-gray-500 dark:text-gray-400">
-                    <p>La IA está creando tus diseños... esto puede tardar un momento.</p>
-                </div>
-            )}
+            {error && <p className="text-brand text-center text-[10px] font-black bg-brand/10 p-4 rounded-2xl animate-shake">{error}</p>}
 
             {results.length > 0 && (
-                <div className="animate-fade-in">
-                    <h3 className="text-xl font-bold mb-4 text-center">Tus Diseños Generados</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                        {results.map((base64Image, index) => (
-                             <div key={index} className="space-y-3">
-                                <div className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden">
-                                    <img src={`data:image/jpeg;base64,${base64Image}`} alt={`Diseño generado ${index + 1}`} className="w-full h-auto object-cover aspect-square"/>
-                                </div>
-                                <div className="flex justify-center gap-2">
-                                     <button onClick={() => handleDownload(base64Image, index)} className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm">
-                                        <DownloadIcon />
-                                        <span className="ml-2">Descargar</span>
-                                    </button>
-                                     <button onClick={() => handleOpenSaveModal(base64Image)} className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm">
-                                        <SaveIcon />
-                                        <span className="ml-2">Guardar</span>
-                                    </button>
-                                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in">
+                    {results.map((base64Image, index) => (
+                         <div key={index} className="group relative bg-[#050505] rounded-[2rem] overflow-hidden border border-white/5 shadow-2xl">
+                            <img src={`data:image/jpeg;base64,${base64Image}`} className="w-full aspect-square object-cover" />
+                            <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-4 p-6">
+                                <button onClick={() => {
+                                    const link = document.createElement('a');
+                                    link.href = `data:image/jpeg;base64,${base64Image}`;
+                                    link.download = `bribiesca-pro-${index}.jpg`;
+                                    link.click();
+                                }} className="w-full py-3 bg-white text-black font-black text-[10px] uppercase rounded-xl">Descargar</button>
+                                <button onClick={() => {
+                                    setImageToSave(`data:image/jpeg;base64,${base64Image}`);
+                                }} className="w-full py-3 bg-brand text-white font-black text-[10px] uppercase rounded-xl">Guardar</button>
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    ))}
                 </div>
             )}
-            
-            {/* Save to Gallery Modal */}
+
             {imageToSave && (
-                <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={handleCloseSaveModal}>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full relative p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-                         <button onClick={handleCloseSaveModal} className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
-                            <CloseIcon />
-                        </button>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Guardar Diseño en Galería</h3>
-                        
-                        {saveSuccess ? (
-                             <div className="text-center p-8">
-                                <p className="text-green-600 dark:text-green-400 font-semibold">{saveSuccess}</p>
-                            </div>
-                        ) : (
-                            <form onSubmit={handleSaveToGallery} className="space-y-4">
-                                <img src={imageToSave} alt="Diseño a guardar" className="w-full h-auto max-h-48 object-contain rounded-md bg-gray-200 dark:bg-gray-900"/>
-                                <div>
-                                    <label htmlFor="save-title" className="block text-sm font-medium mb-1">Título</label>
-                                    <input type="text" id="save-title" value={saveData.title} onChange={e => setSaveData({...saveData, title: e.target.value})} required className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"/>
-                                </div>
-                                <div>
-                                    <label htmlFor="save-description" className="block text-sm font-medium mb-1">Descripción (opcional)</label>
-                                    <textarea id="save-description" value={saveData.description} onChange={e => setSaveData({...saveData, description: e.target.value})} rows={2} className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"></textarea>
-                                </div>
-                                <div>
-                                    <label htmlFor="save-style" className="block text-sm font-medium mb-1">Estilo</label>
-                                    <select id="save-style" value={saveData.style} onChange={e => setSaveData({...saveData, style: e.target.value as TattooStyle})} className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
-                                        {TATTOO_STYLES.map(style => <option key={style} value={style}>{style}</option>)}
-                                    </select>
-                                </div>
-                                <div className="flex justify-end gap-4 pt-2">
-                                    <button type="button" onClick={handleCloseSaveModal} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded-md font-semibold">Cancelar</button>
-                                     <button type="submit" disabled={isSaving} className="px-4 py-2 bg-purple-600 text-white rounded-md font-semibold hover:bg-purple-700 disabled:bg-purple-400 flex items-center justify-center">
-                                        {isSaving && <Spinner />}
-                                        <span className={isSaving ? 'ml-2' : ''}>Guardar</span>
-                                    </button>
-                                </div>
-                            </form>
-                        )}
+                <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] flex items-center justify-center p-6 animate-fade-in" onClick={() => setImageToSave(null)}>
+                    <div className="bg-[#050505] border border-white/10 w-full max-w-md rounded-[3rem] p-10 space-y-8" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-xl font-black text-brand italic uppercase">Guardar en Galería</h3>
+                        <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            setIsSaving(true);
+                            await saveToGallery({ src: imageToSave, ...saveData, type: 'image' });
+                            setIsSaving(false);
+                            setImageToSave(null);
+                        }} className="space-y-4">
+                            <input type="text" placeholder="TÍTULO" required onChange={e => setSaveData({...saveData, title: e.target.value})} className="w-full bg-black p-5 rounded-2xl border border-white/10 text-white font-bold" />
+                            <textarea placeholder="DESCRIPCIÓN" onChange={e => setSaveData({...saveData, description: e.target.value})} className="w-full bg-black p-5 rounded-2xl border border-white/10 text-white font-bold h-24" />
+                            <select onChange={e => setSaveData({...saveData, style: e.target.value as TattooStyle})} className="w-full bg-black p-5 rounded-2xl border border-white/10 text-white font-bold">
+                                {TATTOO_STYLES.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                            <button disabled={isSaving} className="w-full py-5 bg-brand text-white font-black rounded-2xl shadow-xl">{isSaving ? <Spinner /> : 'CONFIRMAR'}</button>
+                        </form>
                     </div>
                 </div>
             )}

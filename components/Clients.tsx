@@ -1,175 +1,144 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Client } from '../types';
-import { getAll, add, put, deleteItem } from '../utils/db';
-import { PlusIcon, UserIcon, CloseIcon, PencilIcon, TrashIcon, SearchIcon } from './Icons';
+import { getAll, add, put } from '../utils/db';
+import { PlusIcon, UserIcon, CloseIcon, PencilIcon, SearchIcon } from './Icons';
 
 export const Clients: React.FC = () => {
     const [clients, setClients] = useState<Client[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingClient, setEditingClient] = useState<Client | null>(null);
-    const [formData, setFormData] = useState({ name: '', contact: '', notes: '' });
+    const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+    const [formData, setFormData] = useState({ name: '', username: '', contact: '', whatsapp: '', notes: '', allergies: '' });
     const [searchTerm, setSearchTerm] = useState('');
 
-    useEffect(() => {
-        loadClients();
-    }, []);
+    useEffect(() => { loadClients(); }, []);
 
     const loadClients = async () => {
         try {
             const allClients = await getAll<Client>('clients');
             setClients(allClients.sort((a, b) => a.name.localeCompare(b.name)));
-        } catch (error) {
-            console.error("Error al cargar clientes:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleOpenModal = (client: Client | null = null) => {
-        setEditingClient(client);
-        if (client) {
-            setFormData({ name: client.name, contact: client.contact, notes: client.notes });
-        } else {
-            setFormData({ name: '', contact: '', notes: '' });
-        }
-        setIsModalOpen(true);
-    };
-
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setEditingClient(null);
-        setFormData({ name: '', contact: '', notes: '' });
+        } catch (error) { console.error(error); } finally { setIsLoading(false); }
     };
 
     const handleSaveClient = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.name.trim() || !formData.contact.trim()) {
-            alert("El nombre y el contacto son obligatorios.");
-            return;
-        }
-
         try {
-            if (editingClient) {
-                const updatedClient = { ...editingClient, ...formData };
-                await put('clients', updatedClient);
+            if (selectedClient) {
+                await put('clients', { ...selectedClient, ...formData });
             } else {
-                const newClient: Omit<Client, 'id'> = {
-                    ...formData,
-                    createdAt: new Date().toISOString(),
-                };
-                await add('clients', newClient);
+                await add('clients', { ...formData, created_at: new Date().toISOString() });
             }
             await loadClients();
-            handleCloseModal();
-        } catch (error) {
-            console.error("Error al guardar cliente:", error);
-            alert("Error al guardar cliente. El contacto puede que ya exista.");
-        }
-    };
-    
-    const handleDeleteClient = async (clientId: number) => {
-        if (window.confirm('¿Estás seguro de que quieres eliminar este cliente? Esta acción no se puede deshacer.')) {
-            try {
-                await deleteItem('clients', clientId);
-                await loadClients();
-            } catch (error) {
-                console.error("Error al eliminar cliente:", error);
-            }
-        }
+            setIsModalOpen(false);
+        } catch (error) { alert("Error al guardar."); }
     };
 
     const filteredClients = useMemo(() => {
-        return clients.filter(client =>
-            client.name.toLowerCase().includes(searchTerm.toLowerCase())
+        return clients.filter(client => 
+            client.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            client.username?.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [clients, searchTerm]);
 
-
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                 <h2 className="text-xl font-bold text-gray-800 dark:text-white">Gestión de Clientes ({filteredClients.length})</h2>
+        <div className="space-y-8 animate-fade-in">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                 <div>
+                    <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase">Expedientes Clínicos</h2>
+                    <p className="text-[10px] text-brand font-black uppercase tracking-widest opacity-80">Gestión de Clientes ({filteredClients.length})</p>
+                </div>
                 <button
-                    onClick={() => handleOpenModal()}
-                    className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors shadow"
+                    onClick={() => { setSelectedClient(null); setFormData({name:'', username:'', contact:'', whatsapp:'', notes:'', allergies:''}); setIsModalOpen(true); }}
+                    className="w-full md:w-auto bg-brand text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-brand/20 active:scale-95 transition-all"
                 >
-                    <PlusIcon className="w-5 h-5" /><span className="ml-2 font-semibold">Añadir Cliente</span>
+                    <PlusIcon className="w-4 h-4 inline mr-2" /> Añadir Cliente
                 </button>
             </div>
             
-             <div className="relative">
+             <div className="relative group">
                 <input
                     type="text"
-                    placeholder="Buscar cliente por nombre..."
+                    placeholder="BUSCAR POR NOMBRE O USUARIO..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full p-3 pl-10 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full p-6 pl-14 bg-black border border-white/5 rounded-3xl text-white font-bold placeholder-gray-700 focus:border-brand transition-all outline-none"
                 />
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <SearchIcon className="w-5 h-5 text-gray-400" />
+                <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+                    <SearchIcon className="w-5 h-5 text-gray-500 group-focus-within:text-brand transition-colors" />
                 </div>
             </div>
 
-            {isLoading ? (
-                <p>Cargando clientes...</p>
-            ) : filteredClients.length > 0 ? (
-                <div className="space-y-4">
-                    {filteredClients.map(client => (
-                        <div key={client.id} className="p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-300 dark:border-gray-700 rounded-lg flex justify-between items-start">
-                             <div className="flex items-start gap-4">
-                                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
-                                    <UserIcon className="w-6 h-6 text-purple-600 dark:text-purple-300"/>
-                                </div>
-                                <div className="flex-grow">
-                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">{client.name}</h3>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">{client.contact}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 italic">{client.notes || 'Sin notas.'}</p>
-                                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredClients.map(client => (
+                    <div key={client.id} className="p-6 bg-[#050505] border border-white/5 rounded-3xl flex items-center justify-between group hover:border-brand/40 transition-all cursor-pointer shadow-2xl" onClick={() => { setSelectedClient(client); setFormData({
+                        name: client.name,
+                        username: client.username || '',
+                        contact: client.contact,
+                        whatsapp: client.whatsapp || '',
+                        notes: client.notes,
+                        allergies: client.allergies || ''
+                    }); setIsModalOpen(true); }}>
+                        <div className="flex items-center gap-5">
+                            <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center text-brand border border-white/5 group-hover:bg-brand/10 transition-colors">
+                                <UserIcon className="w-8 h-8"/>
                             </div>
-                            <div className="flex flex-shrink-0 ml-2">
-                                <button onClick={() => handleOpenModal(client)} className="p-2 text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors" aria-label="Editar Cliente">
-                                    <PencilIcon />
-                                </button>
-                                <button onClick={() => handleDeleteClient(client.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors" aria-label="Eliminar Cliente">
-                                    <TrashIcon />
-                                </button>
+                            <div>
+                                <h3 className="font-black text-white text-base tracking-tight uppercase">{client.name}</h3>
+                                <div className="flex flex-col gap-1 mt-1">
+                                    <p className="text-[9px] text-brand font-black uppercase tracking-widest">@{client.username || 'sin_usuario'}</p>
+                                    <p className="text-[10px] text-gray-500 font-bold">{client.contact}</p>
+                                </div>
+                                {client.whatsapp && (
+                                    <a href={`https://wa.me/${client.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-[8px] font-black text-green-500 border border-green-500/20 px-2 py-1 rounded-md bg-green-500/5 hover:bg-green-500/20 transition-colors">
+                                        WHATSAPP ACTIVO
+                                    </a>
+                                )}
                             </div>
                         </div>
-                    ))}
-                </div>
-            ) : (
-                <p className="text-center text-gray-500 py-8">
-                    {searchTerm ? "No se encontraron clientes." : "Aún no tienes clientes. ¡Añade el primero!"}
-                </p>
-            )}
+                        <div className="hidden group-hover:flex items-center gap-3">
+                            <button className="p-3 bg-white/5 rounded-xl text-gray-500 hover:text-brand transition-colors"><PencilIcon /></button>
+                        </div>
+                    </div>
+                ))}
+            </div>
 
-            {/* Client Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={handleCloseModal}>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full relative p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={handleCloseModal} className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
-                            <CloseIcon />
-                        </button>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                            {editingClient ? 'Editar Cliente' : 'Añadir Nuevo Cliente'}
-                        </h3>
-                        <form onSubmit={handleSaveClient} className="space-y-4">
+                <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
+                    <div className="bg-[#050505] border border-white/10 w-full max-w-2xl rounded-3xl p-8 space-y-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-black text-brand italic uppercase tracking-tighter">{selectedClient ? 'Editar Expediente' : 'Nuevo Cliente'}</h3>
+                            <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-white"><CloseIcon /></button>
+                        </div>
+                        
+                        <form onSubmit={handleSaveClient} className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Nombre Completo</label>
+                                    <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required className="w-full bg-black p-5 rounded-2xl border border-white/10 font-bold" />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Usuario (@)</label>
+                                    <input type="text" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} className="w-full bg-black p-5 rounded-2xl border border-white/10 font-bold text-brand" />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Correo Principal</label>
+                                    <input type="email" value={formData.contact} onChange={e => setFormData({ ...formData, contact: e.target.value })} required className="w-full bg-black p-5 rounded-2xl border border-white/10 font-bold" />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">WhatsApp Directo</label>
+                                    <input type="tel" value={formData.whatsapp} onChange={e => setFormData({ ...formData, whatsapp: e.target.value })} className="w-full bg-black p-5 rounded-2xl border border-white/10 font-bold text-green-500" />
+                                </div>
+                            </div>
+
                             <div>
-                                <label htmlFor="client-name" className="block text-sm font-medium mb-1">Nombre</label>
-                                <input type="text" id="client-name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"/>
+                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Alergias Críticas</label>
+                                <textarea value={formData.allergies} onChange={e => setFormData({ ...formData, allergies: e.target.value })} className="w-full bg-black p-5 rounded-2xl border border-red-500/20 text-red-500 font-bold" rows={2} placeholder="EJ. NÍQUEL, LÁTEX..."></textarea>
                             </div>
-                             <div>
-                                <label htmlFor="client-contact" className="block text-sm font-medium mb-1">Contacto (Email o Teléfono)</label>
-                                <input type="text" id="client-contact" value={formData.contact} onChange={e => setFormData({ ...formData, contact: e.target.value })} required className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"/>
-                            </div>
-                            <div>
-                                <label htmlFor="client-notes" className="block text-sm font-medium mb-1">Notas</label>
-                                <textarea id="client-notes" value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} rows={3} className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"></textarea>
-                            </div>
-                            <div className="flex justify-end gap-4 pt-2">
-                                <button type="button" onClick={handleCloseModal} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded-md font-semibold">Cancelar</button>
-                                <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded-md font-semibold hover:bg-purple-700">Guardar</button>
+
+                            <div className="flex gap-4">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-5 bg-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest">Cancelar</button>
+                                <button type="submit" className="flex-1 py-5 bg-brand text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand/20">Guardar Expediente</button>
                             </div>
                         </form>
                     </div>

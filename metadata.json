@@ -1,5 +1,9 @@
 {
-  "name": "Johana Tatuajes",
-  "description": "Una aplicación de IA para ayudar a Johana Tatuajes a crear diseños de tatuajes, generar trazos y previsualizar tatuajes en diferentes partes del cuerpo.",
-  "requestFramePermissions": []
+  "name": "Bribiesca Studio Pro",
+  "description": "Asistente de tatuajes de élite con IA multimodal, búsqueda en tiempo real y soporte por voz manos libres.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
 }
