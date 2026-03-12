@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { PencilIcon, TrashIcon, CheckIcon, CloseIcon } from './Icons';
+import { PencilIcon, TrashIcon, CheckIcon } from './Icons';
 import { getAll, add, put, deleteItem, findOrAddClient } from '../utils/db';
 import { Appointment } from '../types';
 
@@ -271,6 +271,7 @@ export const Calendar: React.FC<{ adminMode?: boolean }> = ({ adminMode = false 
                         <div>
                             <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Dato de Contacto</label>
                             <input type={reminderMethod === 'email' ? 'email' : 'tel'} name="contact" value={formData.contact} onChange={handleFormChange} required className="w-full p-4 rounded-2xl bg-black border border-white/10 text-white font-bold" />
+                            {contactError && <p className="text-red-500 text-[10px] mt-1">{contactError}</p>}
                         </div>
                         <div>
                             <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Descripción de la Idea</label>

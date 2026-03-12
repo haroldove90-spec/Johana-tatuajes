@@ -5,8 +5,11 @@ import { OutlineCreator } from './components/OutlineCreator';
 import { TattooPreviewer } from './components/TattooPreviewer';
 import { DesignGenerator } from './components/DesignGenerator';
 import { AiConsultant } from './components/AiConsultant';
-import { DailyTips } from './components/DailyTips';
+import { StencilPrepper } from './components/StencilPrepper';
+import { AiDesigner } from './components/AiDesigner';
+import { Tools } from './components/Tools';
 import { Gallery } from './components/Gallery';
+import { DailyTips } from './components/DailyTips';
 import { Calendar } from './components/Calendar';
 import { Clients } from './components/Clients';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -23,7 +26,6 @@ import { supabase } from './utils/supabase';
 import { 
     HomeIcon, 
     CalendarIcon, 
-    ConsultantIcon, 
     ClientsIcon, 
     InventoryIcon, 
     FlashIcon, 
@@ -134,6 +136,7 @@ const App: React.FC = () => {
         { id: 'medical_history', icon: <MedicalIcon />, label: 'Historial' },
         { id: 'consent', icon: <CheckIcon />, label: 'Firmas' },
         { id: 'inventory', icon: <InventoryIcon />, label: 'Stock' },
+        { id: 'tools', icon: <DashboardIcon />, label: 'Herramientas' },
     ];
 
     const clientMenu: NavItem[] = [
@@ -161,9 +164,6 @@ const App: React.FC = () => {
                             highlight={pendingConsentsCount > 0} 
                         />
                         <FeatureCard title="Mi Presupuesto" desc="Calculadora PRO" icon={<BudgetIcon />} onClick={() => setActiveFeature('budget')} />
-                        <FeatureCard title="Generador IA" desc="Diseños únicos" icon={<DashboardIcon />} onClick={() => setActiveFeature('generate')} />
-                        <FeatureCard title="Probador AR" desc="Vista en piel" icon={<DashboardIcon />} onClick={() => setActiveFeature('preview')} />
-                        <FeatureCard title="Asistente PRO" desc="Consultas técnicas" icon={<ConsultantIcon />} onClick={() => setActiveFeature('consultant')} />
                         <FeatureCard title="Testimonios" desc="Reseñas Studio" icon={<UserIcon />} onClick={() => setActiveFeature('reviews')} />
                     </div>
                 </div>
@@ -181,6 +181,10 @@ const App: React.FC = () => {
             case 'preview': return <TattooPreviewer />;
             case 'outline': return <OutlineCreator />;
             case 'consultant': return <AiConsultant />;
+            case 'stencil': return <StencilPrepper />;
+            case 'designer': return <AiDesigner />;
+            case 'tools': return <Tools onSelectFeature={setActiveFeature} />;
+            case 'gallery': return <Gallery />;
             case 'profile': return <ClientProfile username={user.username} />;
             case 'reviews': return <Reviews username={user.username} isAdmin={user.role === 'admin'} />;
             default: return <div className="text-center py-20 opacity-50 uppercase tracking-widest text-[10px]">Cargando...</div>;

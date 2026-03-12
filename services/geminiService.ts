@@ -1,7 +1,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-export const getAiClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
+export const getAiClient = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
 export const generateTattooOutline = async (base64Image: string, mimeType: string): Promise<string> => {
   const ai = getAiClient();
@@ -15,7 +15,7 @@ export const generateTattooOutline = async (base64Image: string, mimeType: strin
     },
   });
 
-  const part = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
+  const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
   if (part?.inlineData?.data) return part.inlineData.data;
   throw new Error('No se pudo generar el trazo.');
 };
@@ -33,7 +33,7 @@ export const generateTattooPreview = async (base64Image: string, mimeType: strin
     },
   });
 
-  const part = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
+  const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
   if (part?.inlineData?.data) return part.inlineData.data;
   throw new Error('No se pudo generar la vista previa.');
 };
@@ -68,22 +68,35 @@ export const generateTattooDesigns = async (prompt: string, quality: 'fast' | 'p
 
   if (quality === 'pro') {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
+      model: 'gemini-3.1-flash-image-preview',
       contents: { parts: [{ text: fullPrompt }] },
       config: {
         imageConfig: { aspectRatio: "1:1", imageSize: "1K" }
       },
     });
-    const images = response.candidates?.[0]?.content?.parts
-      ?.filter(p => p.inlineData)
-      ?.map(p => p.inlineData!.data) || [];
+    const images = (response.candidates?.[0]?.content?.parts
+      ?.filter(p => p.inlineData && p.inlineData.data)
+      ?.map(p => p.inlineData!.data) || []) as string[];
     return images;
   } else {
-    const response = await ai.models.generateImages({
-      model: 'imagen-4.0-generate-001',
-      prompt: fullPrompt,
-      config: { numberOfImages: 3, outputMimeType: 'image/jpeg' },
+    // Generate 3 images in parallel for fast quality
+    const promises = Array.from({ length: 3 }).map(() => 
+      ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: { parts: [{ text: fullPrompt }] },
+        config: {
+          imageConfig: { aspectRatio: "1:1" }
+        },
+      })
+    );
+    const responses = await Promise.all(promises);
+    const images: string[] = [];
+    responses.forEach(response => {
+      const parts = response.candidates?.[0]?.content?.parts;
+      if (parts) {
+        parts.filter(p => p.inlineData && p.inlineData.data).forEach(p => images.push(p.inlineData!.data as string));
+      }
     });
-    return response.generatedImages.map(img => img.image.imageBytes);
+    return images;
   }
 };

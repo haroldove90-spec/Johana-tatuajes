@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { UserRole } from '../types';
-import { Spinner, EyeIcon, EyeOffIcon, CloseIcon } from './Icons';
+import { Spinner, EyeIcon, EyeOffIcon } from './Icons';
 import { supabase } from '../utils/supabase';
 
 interface AuthProps {

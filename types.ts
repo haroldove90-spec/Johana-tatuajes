@@ -1,5 +1,5 @@
 
-export type Feature = 'home' | 'outline' | 'preview' | 'generate' | 'consultant' | 'gallery' | 'calendar' | 'clients' | 'inventory' | 'flash' | 'consent' | 'budget' | 'aftercare' | 'dashboard' | 'notifications' | 'profile' | 'reviews' | 'medical_history';
+export type Feature = 'home' | 'outline' | 'preview' | 'generate' | 'consultant' | 'gallery' | 'calendar' | 'clients' | 'inventory' | 'flash' | 'consent' | 'budget' | 'aftercare' | 'dashboard' | 'notifications' | 'profile' | 'reviews' | 'medical_history' | 'stencil' | 'designer' | 'tools';
 export type UserRole = 'admin' | 'client';
 
 export interface Client {
@@ -14,6 +14,18 @@ export interface Client {
     role?: UserRole;
     loyalty_points?: number;
     ink_history?: string[];
+    created_at?: string;
+}
+
+export interface ClientSession {
+    id: number;
+    client_id: number;
+    session_date: string;
+    before_photos: string[];
+    after_photos: string[];
+    pigments_used: string;
+    needles_used: string;
+    notes: string;
     created_at?: string;
 }
 

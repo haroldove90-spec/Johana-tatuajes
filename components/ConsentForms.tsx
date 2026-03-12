@@ -126,9 +126,9 @@ export const ConsentForms: React.FC<ConsentFormsProps> = ({ userRole, username }
         if (viewOnlyMode) return;
         setIsDrawing(true);
         const ctx = canvasRef.current?.getContext('2d');
-        if (ctx) {
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (ctx && rect) {
             ctx.beginPath();
-            const rect = canvasRef.current?.getBoundingClientRect();
             const clientX = e.clientX || (e.touches && e.touches[0].clientX);
             const clientY = e.clientY || (e.touches && e.touches[0].clientY);
             const x = clientX - rect.left;

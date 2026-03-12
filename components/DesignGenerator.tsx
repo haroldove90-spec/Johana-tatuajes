@@ -1,9 +1,10 @@
 
 import React, { useState, useCallback } from 'react';
-import { generateTattooDesigns } from '../services/geminiService';
-import { Spinner, DownloadIcon, SaveIcon, CloseIcon, StarIcon } from './Icons';
+import { generateTattooDesigns, generateTattooOutline } from '../services/geminiService';
+import { Spinner, StarIcon } from './Icons';
 import { TattooStyle, TATTOO_STYLES } from '../data/gallery';
 import { saveToGallery } from '../utils/galleryUtils';
+import { jsPDF } from 'jspdf';
 
 export const DesignGenerator: React.FC = () => {
     const [prompt, setPrompt] = useState<string>('');
@@ -14,8 +15,8 @@ export const DesignGenerator: React.FC = () => {
     
     const [imageToSave, setImageToSave] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [isGeneratingOutline, setIsGeneratingOutline] = useState(false);
     const [saveData, setSaveData] = useState({ title: '', description: '', style: 'Realismo' as TattooStyle });
-    const [saveSuccess, setSaveSuccess] = useState('');
 
     const handleGenerate = useCallback(async () => {
         if (!prompt.trim()) {
@@ -102,6 +103,23 @@ export const DesignGenerator: React.FC = () => {
                                 <button onClick={() => {
                                     setImageToSave(`data:image/jpeg;base64,${base64Image}`);
                                 }} className="w-full py-3 bg-brand text-white font-black text-[10px] uppercase rounded-xl">Guardar</button>
+                                <button onClick={async () => {
+                                    try {
+                                        setIsGeneratingOutline(true);
+                                        const outlineBase64 = await generateTattooOutline(base64Image, 'image/jpeg');
+                                        const outlineUrl = `data:image/jpeg;base64,${outlineBase64}`;
+                                        const pdf = new jsPDF('p', 'mm', [150, 150]);
+                                        pdf.addImage(outlineUrl, 'JPEG', 0, 0, 150, 150);
+                                        pdf.save(`trazo-bribiesca-${index}.pdf`);
+                                    } catch (err) {
+                                        console.error(err);
+                                        alert('Error al generar el trazo.');
+                                    } finally {
+                                        setIsGeneratingOutline(false);
+                                    }
+                                }} disabled={isGeneratingOutline} className="w-full py-3 bg-purple-600 text-white font-black text-[10px] uppercase rounded-xl disabled:opacity-50">
+                                    {isGeneratingOutline ? 'Generando...' : 'Exportar a PDF en trazo'}
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -115,7 +133,7 @@ export const DesignGenerator: React.FC = () => {
                         <form onSubmit={async (e) => {
                             e.preventDefault();
                             setIsSaving(true);
-                            await saveToGallery({ src: imageToSave, ...saveData, type: 'image' });
+                            await saveToGallery({ src: imageToSave, alt: saveData.title, description: saveData.description, style: saveData.style, type: 'image' });
                             setIsSaving(false);
                             setImageToSave(null);
                         }} className="space-y-4">

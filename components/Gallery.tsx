@@ -1,272 +1,160 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Tattoo, TattooStyle, TATTOO_STYLES } from '../data/gallery';
-import { FacebookIcon, InstagramIcon, TikTokIcon, CloseIcon, UploadIcon, VideoPlayIcon, Spinner } from './Icons';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../utils/supabase';
-import { saveToGallery } from '../utils/galleryUtils';
-
-type SortOption = 'newest' | 'oldest';
+import { Spinner, DownloadIcon, CameraIcon } from './Icons';
 
 export const Gallery: React.FC = () => {
-    // --- State ---
-    const [galleryItems, setGalleryItems] = useState<Tattoo[]>([]);
+    const [photos, setPhotos] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [filterStyle, setFilterStyle] = useState<TattooStyle | 'all'>('all');
-    const [sortOrder, setSortOrder] = useState<SortOption>('newest');
-    const [selectedItem, setSelectedItem] = useState<Tattoo | null>(null);
-
-    // State for adding new media
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
-    const [newMediaSrc, setNewMediaSrc] = useState<string | null>(null);
-    const [newMediaType, setNewMediaType] = useState<'image' | 'video'>('image');
-    const [newMediaData, setNewMediaData] = useState({
-        alt: '',
-        description: '',
-        style: 'Realismo' as TattooStyle,
-    });
+    const [isProcessing, setIsProcessing] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // --- Data Fetching ---
-    useEffect(() => {
-        loadGallery();
-    }, []);
-
-    const loadGallery = async () => {
+    const fetchPhotos = async () => {
         setIsLoading(true);
-        try {
-            const { data, error } = await supabase.from('gallery').select('*');
-            if (error) throw error;
-            if (data) {
-                setGalleryItems(data as Tattoo[]);
-            }
-        } catch (err) {
-            console.error("Error loading gallery from Supabase:", err);
-        } finally {
-            setIsLoading(false);
-        }
+        const { data } = await supabase.from('gallery_photos').select('*').order('created_at', { ascending: false });
+        if (data) setPhotos(data);
+        setIsLoading(false);
     };
 
-    const filteredAndSortedGallery = useMemo(() => {
-        let items = [...galleryItems];
-        if (filterStyle !== 'all') {
-            items = items.filter(item => item.style === filterStyle);
-        }
-        items.sort((a, b) => {
-            const dateA = new Date(a.date).getTime();
-            const dateB = new Date(b.date).getTime();
-            return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
-        });
-        return items;
-    }, [filterStyle, sortOrder, galleryItems]);
-    
-    // --- Handlers for adding media ---
+    useEffect(() => {
+        fetchPhotos();
+    }, []);
+
+    const processWatermark = (file: File) => {
+        setIsProcessing(true);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+
+                canvas.width = img.width;
+                canvas.height = img.height;
+
+                ctx.drawImage(img, 0, 0);
+
+                const logo = new Image();
+                logo.crossOrigin = "Anonymous";
+                logo.onload = async () => {
+                    const logoWidth = canvas.width * 0.2;
+                    const logoHeight = (logo.height / logo.width) * logoWidth;
+                    const padding = canvas.width * 0.05;
+                    const x = canvas.width - logoWidth - padding;
+                    const y = canvas.height - logoHeight - padding;
+
+                    ctx.globalAlpha = 0.7;
+                    ctx.drawImage(logo, x, y, logoWidth, logoHeight);
+                    ctx.globalAlpha = 1.0;
+
+                    const watermarkedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                    
+                    try {
+                        await supabase.from('gallery_photos').insert([{ image_data: watermarkedBase64 }]);
+                        fetchPhotos();
+                    } catch (err) {
+                        console.error("Error saving photo", err);
+                        alert("Error al guardar la foto");
+                    } finally {
+                        setIsProcessing(false);
+                    }
+                };
+                logo.onerror = () => {
+                    alert("Error al cargar el logotipo para la marca de agua.");
+                    setIsProcessing(false);
+                };
+                logo.src = 'https://appdesignmex.com/bribiescaicono.png';
+            };
+            img.src = e.target?.result as string;
+        };
+        reader.readAsDataURL(file);
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setNewMediaType(file.type.startsWith('video') ? 'video' : 'image');
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setNewMediaSrc(reader.result as string);
-                setIsAddModalOpen(true);
-            };
-            reader.readAsDataURL(file);
+            processWatermark(file);
         }
-        if (e.target) e.target.value = '';
     };
 
-    const handleSaveNewMedia = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const { alt, description, style } = newMediaData;
-        
-        if (!newMediaSrc || !alt.trim()) {
-            alert("El título es obligatorio.");
-            return;
-        }
-
-        setIsSaving(true);
+    const handleShare = async (base64Data: string) => {
         try {
-            await saveToGallery({
-                src: newMediaSrc,
-                alt,
-                description,
-                style,
-                type: newMediaType,
-            });
-            closeAddModal();
-            await loadGallery(); // Refresh gallery
+            const res = await fetch(base64Data);
+            const blob = await res.blob();
+            const file = new File([blob], 'tattoo_watermark.jpg', { type: 'image/jpeg' });
+            
+            if (navigator.share) {
+                await navigator.share({
+                    title: 'Bribiesca Tattoo',
+                    text: 'Mira mi último trabajo',
+                    files: [file]
+                });
+            } else {
+                alert('La función de compartir no está soportada en este navegador.');
+            }
         } catch (error) {
-            console.error(error);
-            alert((error as Error).message || "No se pudo guardar la imagen.");
-        } finally {
-            setIsSaving(false);
+            console.error('Error sharing:', error);
         }
     };
 
-    const closeAddModal = () => {
-        setIsAddModalOpen(false);
-        setNewMediaSrc(null);
-        setNewMediaData({ alt: '', description: '', style: TATTOO_STYLES[0] || 'Realismo' });
-    };
-    
-    // --- Share Logic ---
-    const handleShare = (platform: 'facebook' | 'instagram' | 'tiktok') => {
-        const text = encodeURIComponent(`¡Mira este increíble trabajo de Johana Tatuajes! - ${selectedItem?.alt}`);
-        if (selectedItem?.type === 'video') {
-             alert("Para compartir videos, guárdalo en tu dispositivo y súbelo desde la app. ¡Gracias!");
-             return;
-        }
-        let shareUrl: string;
-        switch (platform) {
-            case 'facebook':
-                shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(selectedItem?.src || '')}&quote=${text}`;
-                window.open(shareUrl, '_blank', 'noopener,noreferrer');
-                break;
-            default:
-                alert("Para compartir, guarda la imagen y súbela desde la app. ¡Gracias!");
-        }
-    };
-    
-    // --- Render ---
     return (
-        <div className="space-y-6">
-            {/* Add Media Controls */}
-            <div className="flex justify-center">
-                 <button onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors shadow">
-                    <UploadIcon /><span className="ml-2 font-semibold">Subir Archivo</span>
+        <div className="space-y-6 animate-fade-in">
+            <header className="mb-8 flex justify-between items-center">
+                <div>
+                    <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase">
+                        Marca de <span className="text-brand">Agua</span>
+                    </h2>
+                    <p className="text-xs text-gray-500 font-black uppercase tracking-widest mt-2">
+                        Protege tus trabajos
+                    </p>
+                </div>
+                <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isProcessing}
+                    className="flex items-center gap-2 bg-brand text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand/20 hover:scale-105 transition-all disabled:opacity-50"
+                >
+                    {isProcessing ? <Spinner /> : <><CameraIcon className="w-5 h-5" /> Tomar Foto</>}
                 </button>
-                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,video/*" className="sr-only" />
-            </div>
+                <input 
+                    type="file" 
+                    accept="image/*" 
+                    capture="environment" 
+                    ref={fileInputRef} 
+                    onChange={handleFileChange} 
+                    className="hidden" 
+                />
+            </header>
 
-            {/* Filters */}
-            <div className="p-4 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-300 dark:border-gray-700">
-                <div className="flex flex-col md:flex-row gap-4 justify-between">
-                    {/* Style Filter */}
-                    <div>
-                        <label className="block text-sm font-medium mb-2">Filtrar por Estilo:</label>
-                        <div className="flex flex-wrap gap-2">
-                             <button
-                                onClick={() => setFilterStyle('all')}
-                                className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${
-                                    filterStyle === 'all'
-                                        ? 'bg-purple-600 text-white shadow'
-                                        : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                }`}
-                            >
-                                Todos
-                            </button>
-                            {TATTOO_STYLES.map(style => (
-                                <button
-                                    key={style}
-                                    onClick={() => setFilterStyle(style)}
-                                    className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${
-                                        filterStyle === style
-                                            ? 'bg-purple-600 text-white shadow'
-                                            : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                    }`}
-                                >
-                                    {style}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    {/* Sort */}
-                    <div className="flex-shrink-0">
-                         <label htmlFor="sort-order" className="block text-sm font-medium mb-2">Ordenar por:</label>
-                         <select
-                            id="sort-order"
-                            value={sortOrder}
-                            onChange={(e) => setSortOrder(e.target.value as SortOption)}
-                            className="w-full md:w-auto bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 text-sm focus:ring-purple-500 focus:border-purple-500"
-                        >
-                            <option value="newest">Más recientes</option>
-                            <option value="oldest">Más antiguos</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            {/* Gallery Grid */}
             {isLoading ? (
-                <div className="flex justify-center items-center py-10">
-                    <Spinner />
+                <div className="flex justify-center py-20"><Spinner /></div>
+            ) : photos.length === 0 ? (
+                <div className="text-center py-20 border border-dashed border-white/10 rounded-3xl bg-[#050505]">
+                    <p className="text-gray-600 text-[10px] font-black uppercase tracking-widest">No hay fotos en la galería</p>
                 </div>
-            ) : filteredAndSortedGallery.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {filteredAndSortedGallery.map((item) => (
-                        <div key={item.id} className="group relative aspect-square cursor-pointer bg-black rounded-lg" onClick={() => setSelectedItem(item)}>
-                            {item.type === 'video' ? (
-                                <video src={item.src} className="w-full h-full object-cover rounded-lg" autoPlay loop muted playsInline />
-                            ) : (
-                                <img src={item.src} alt={item.alt} className="w-full h-full object-cover rounded-lg"/>
-                            )}
-                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-                                {item.type === 'video' && <VideoPlayIcon />}
-                                <p className="text-white text-center p-2 text-sm">{item.alt}</p>
+            ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {photos.map((photo) => (
+                        <div key={photo.id} className="relative group aspect-square rounded-2xl overflow-hidden bg-[#050505] border border-white/5 shadow-xl">
+                            <img src={photo.image_data} alt="Tattoo" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                                <a 
+                                    href={photo.image_data} 
+                                    download={`bribiesca_tattoo_${photo.id}.jpg`}
+                                    className="p-3 bg-white/10 hover:bg-brand text-white rounded-full transition-colors"
+                                    title="Descargar"
+                                >
+                                    <DownloadIcon className="w-5 h-5" />
+                                </a>
+                                <button 
+                                    onClick={() => handleShare(photo.image_data)}
+                                    className="p-3 bg-white/10 hover:bg-brand text-white rounded-full transition-colors"
+                                    title="Compartir"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                                </button>
                             </div>
                         </div>
                     ))}
-                </div>
-            ) : (
-                <p className="text-center text-gray-500 py-8">No se encontraron trabajos. ¡Añade tu primero!</p>
-            )}
-            
-            {/* Add Media Modal */}
-            {isAddModalOpen && newMediaSrc && (
-                <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={closeAddModal}>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full relative p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Añadir Nuevo Trabajo</h3>
-                        {newMediaType === 'image' ? (
-                            <img src={newMediaSrc} alt="Previsualización" className="w-full h-auto max-h-64 object-contain rounded-md bg-gray-200 dark:bg-gray-900"/>
-                        ):(
-                            <video src={newMediaSrc} controls className="w-full h-auto max-h-64 object-contain rounded-md bg-gray-200 dark:bg-gray-900"/>
-                        )}
-                        <form onSubmit={handleSaveNewMedia} className="space-y-4">
-                            <input type="text" value={newMediaData.alt} onChange={e => setNewMediaData({...newMediaData, alt: e.target.value})} placeholder="Título del trabajo" required className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"/>
-                            <textarea value={newMediaData.description} onChange={e => setNewMediaData({...newMediaData, description: e.target.value})} placeholder="Descripción (opcional)" rows={2} className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"></textarea>
-                            <select value={newMediaData.style} onChange={e => setNewMediaData({...newMediaData, style: e.target.value as TattooStyle})} className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
-                                {TATTOO_STYLES.map(style => <option key={style} value={style}>{style}</option>)}
-                            </select>
-                            <div className="flex justify-end gap-4 pt-2">
-                                <button type="button" onClick={closeAddModal} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded-md font-semibold">Cancelar</button>
-                                <button type="submit" disabled={isSaving} className="px-4 py-2 bg-purple-600 text-white rounded-md font-semibold hover:bg-purple-700 disabled:bg-purple-400 flex items-center justify-center">
-                                    {isSaving && <Spinner />}
-                                    <span className={isSaving ? 'ml-2' : ''}>Guardar</span>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-            
-            {/* Selected Item Modal */}
-            {selectedItem && (
-                <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={() => setSelectedItem(null)}>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full flex flex-col md:flex-row relative" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => setSelectedItem(null)} className="absolute -top-10 right-0 text-white hover:text-gray-300">
-                           <CloseIcon className="w-8 h-8"/>
-                        </button>
-                        <div className="w-full md:w-1/2 bg-black flex items-center justify-center rounded-t-lg md:rounded-l-lg md:rounded-t-none">
-                            {selectedItem.type === 'video' ? (
-                                <video src={selectedItem.src} controls autoPlay className="w-full h-auto object-cover md:h-full"/>
-                            ) : (
-                                <img src={selectedItem.src} alt={selectedItem.alt} className="w-full h-auto object-cover rounded-t-lg md:rounded-l-lg md:rounded-t-none"/>
-                            )}
-                        </div>
-                        <div className="p-6 flex flex-col">
-                            <h3 className="text-2xl font-bold mb-2">{selectedItem.alt}</h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1"><span className="font-semibold">Estilo:</span> {selectedItem.style}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4"><span className="font-semibold">Fecha:</span> {new Date(selectedItem.date).toLocaleDateString()}</p>
-                            <p className="flex-grow text-gray-700 dark:text-gray-300">{selectedItem.description}</p>
-                            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                <p className="text-sm font-semibold mb-3 text-center">Compartir en:</p>
-                                <div className="flex justify-center gap-4">
-                                    <button onClick={() => handleShare('facebook')} className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center hover:bg-blue-700 transition-colors"><FacebookIcon/></button>
-                                    <button onClick={() => handleShare('instagram')} className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 flex items-center justify-center hover:opacity-90 transition-opacity"><InstagramIcon/></button>
-                                    <button onClick={() => handleShare('tiktok')} className="w-10 h-10 rounded-full bg-black flex items-center justify-center hover:bg-gray-800 transition-colors"><TikTokIcon/></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             )}
         </div>

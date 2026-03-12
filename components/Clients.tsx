@@ -3,14 +3,16 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Client } from '../types';
 import { getAll, add, put } from '../utils/db';
 import { PlusIcon, UserIcon, CloseIcon, PencilIcon, SearchIcon } from './Icons';
+import { SessionGallery } from './SessionGallery';
 
 export const Clients: React.FC = () => {
     const [clients, setClients] = useState<Client[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [formData, setFormData] = useState({ name: '', username: '', contact: '', whatsapp: '', notes: '', allergies: '' });
     const [searchTerm, setSearchTerm] = useState('');
+
+    const [activeTab, setActiveTab] = useState<'info' | 'sessions'>('info');
 
     useEffect(() => { loadClients(); }, []);
 
@@ -18,7 +20,7 @@ export const Clients: React.FC = () => {
         try {
             const allClients = await getAll<Client>('clients');
             setClients(allClients.sort((a, b) => a.name.localeCompare(b.name)));
-        } catch (error) { console.error(error); } finally { setIsLoading(false); }
+        } catch (error) { console.error(error); }
     };
 
     const handleSaveClient = async (e: React.FormEvent) => {
@@ -49,7 +51,7 @@ export const Clients: React.FC = () => {
                     <p className="text-[10px] text-brand font-black uppercase tracking-widest opacity-80">Gestión de Clientes ({filteredClients.length})</p>
                 </div>
                 <button
-                    onClick={() => { setSelectedClient(null); setFormData({name:'', username:'', contact:'', whatsapp:'', notes:'', allergies:''}); setIsModalOpen(true); }}
+                    onClick={() => { setSelectedClient(null); setFormData({name:'', username:'', contact:'', whatsapp:'', notes:'', allergies:''}); setActiveTab('info'); setIsModalOpen(true); }}
                     className="w-full md:w-auto bg-brand text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-brand/20 active:scale-95 transition-all"
                 >
                     <PlusIcon className="w-4 h-4 inline mr-2" /> Añadir Cliente
@@ -110,37 +112,58 @@ export const Clients: React.FC = () => {
                             <h3 className="text-xl font-black text-brand italic uppercase tracking-tighter">{selectedClient ? 'Editar Expediente' : 'Nuevo Cliente'}</h3>
                             <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-white"><CloseIcon /></button>
                         </div>
+
+                        {selectedClient && (
+                            <div className="flex gap-2 mb-6 border-b border-white/10 pb-4">
+                                <button 
+                                    onClick={() => setActiveTab('info')}
+                                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'info' ? 'bg-brand text-white' : 'bg-white/5 text-gray-500 hover:bg-white/10'}`}
+                                >
+                                    Información
+                                </button>
+                                <button 
+                                    onClick={() => setActiveTab('sessions')}
+                                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'sessions' ? 'bg-brand text-white' : 'bg-white/5 text-gray-500 hover:bg-white/10'}`}
+                                >
+                                    Sesiones
+                                </button>
+                            </div>
+                        )}
                         
-                        <form onSubmit={handleSaveClient} className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Nombre Completo</label>
-                                    <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required className="w-full bg-black p-5 rounded-2xl border border-white/10 font-bold" />
+                        {activeTab === 'info' ? (
+                            <form onSubmit={handleSaveClient} className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Nombre Completo</label>
+                                        <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required className="w-full bg-black p-5 rounded-2xl border border-white/10 font-bold" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Usuario (@)</label>
+                                        <input type="text" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} className="w-full bg-black p-5 rounded-2xl border border-white/10 font-bold text-brand" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Correo Principal</label>
+                                        <input type="email" value={formData.contact} onChange={e => setFormData({ ...formData, contact: e.target.value })} required className="w-full bg-black p-5 rounded-2xl border border-white/10 font-bold" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">WhatsApp Directo</label>
+                                        <input type="tel" value={formData.whatsapp} onChange={e => setFormData({ ...formData, whatsapp: e.target.value })} className="w-full bg-black p-5 rounded-2xl border border-white/10 font-bold text-green-500" />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Usuario (@)</label>
-                                    <input type="text" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} className="w-full bg-black p-5 rounded-2xl border border-white/10 font-bold text-brand" />
-                                </div>
-                                <div>
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Correo Principal</label>
-                                    <input type="email" value={formData.contact} onChange={e => setFormData({ ...formData, contact: e.target.value })} required className="w-full bg-black p-5 rounded-2xl border border-white/10 font-bold" />
-                                </div>
-                                <div>
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">WhatsApp Directo</label>
-                                    <input type="tel" value={formData.whatsapp} onChange={e => setFormData({ ...formData, whatsapp: e.target.value })} className="w-full bg-black p-5 rounded-2xl border border-white/10 font-bold text-green-500" />
-                                </div>
-                            </div>
 
-                            <div>
-                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Alergias Críticas</label>
-                                <textarea value={formData.allergies} onChange={e => setFormData({ ...formData, allergies: e.target.value })} className="w-full bg-black p-5 rounded-2xl border border-red-500/20 text-red-500 font-bold" rows={2} placeholder="EJ. NÍQUEL, LÁTEX..."></textarea>
-                            </div>
+                                <div>
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Alergias Críticas</label>
+                                    <textarea value={formData.allergies} onChange={e => setFormData({ ...formData, allergies: e.target.value })} className="w-full bg-black p-5 rounded-2xl border border-red-500/20 text-red-500 font-bold" rows={2} placeholder="EJ. NÍQUEL, LÁTEX..."></textarea>
+                                </div>
 
-                            <div className="flex gap-4">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-5 bg-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest">Cancelar</button>
-                                <button type="submit" className="flex-1 py-5 bg-brand text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand/20">Guardar Expediente</button>
-                            </div>
-                        </form>
+                                <div className="flex gap-4">
+                                    <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-5 bg-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest">Cancelar</button>
+                                    <button type="submit" className="flex-1 py-5 bg-brand text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand/20">Guardar Expediente</button>
+                                </div>
+                            </form>
+                        ) : (
+                            selectedClient && <SessionGallery clientId={selectedClient.id} />
+                        )}
                     </div>
                 </div>
             )}

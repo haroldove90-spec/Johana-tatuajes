@@ -2,11 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabase';
 import { InventoryItem } from '../types';
-import { Spinner, PlusIcon, TrashIcon } from './Icons';
+import { Spinner, PlusIcon, TrashIcon, CloseIcon } from './Icons';
 
 export const InventoryManager: React.FC = () => {
     const [items, setItems] = useState<InventoryItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [newItem, setNewItem] = useState({ item_name: '', category: '', quantity: 0, min_stock: 0 });
 
     const fetchInventory = async () => {
         const { data } = await supabase.from('inventory').select('*').order('category');
@@ -22,6 +24,25 @@ export const InventoryManager: React.FC = () => {
         fetchInventory();
     };
 
+    const handleDelete = async (id: number) => {
+        if (window.confirm('¿Eliminar este insumo?')) {
+            await supabase.from('inventory').delete().eq('id', id);
+            fetchInventory();
+        }
+    };
+
+    const handleAddItem = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await supabase.from('inventory').insert([newItem]);
+            setIsModalOpen(false);
+            setNewItem({ item_name: '', category: '', quantity: 0, min_stock: 0 });
+            fetchInventory();
+        } catch (error) {
+            alert('Error al agregar insumo');
+        }
+    };
+
     if (loading) return (
         <div className="flex justify-center items-center h-40">
             <Spinner />
@@ -32,7 +53,10 @@ export const InventoryManager: React.FC = () => {
         <div className="space-y-6 animate-fade-in">
             <div className="flex justify-between items-center">
                 <h2 className="text-sm font-black uppercase tracking-[0.3em] text-brand">Gestión de Insumos</h2>
-                <button className="flex items-center gap-2 bg-brand text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand/20 hover:scale-105 transition-all">
+                <button 
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center gap-2 bg-brand text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand/20 hover:scale-105 transition-all"
+                >
                     <PlusIcon className="w-4 h-4" /> Nuevo
                 </button>
             </div>
@@ -74,7 +98,7 @@ export const InventoryManager: React.FC = () => {
                                         <span className="text-[11px] font-black text-gray-600 bg-white/5 px-3 py-1 rounded-full border border-white/5">{item.min_stock}</span>
                                     </td>
                                     <td className="px-6 py-6 text-right">
-                                        <button className="text-gray-700 hover:text-brand transition-all p-2 hover:scale-125">
+                                        <button onClick={() => handleDelete(item.id)} className="text-gray-700 hover:text-brand transition-all p-2 hover:scale-125">
                                             <TrashIcon />
                                         </button>
                                     </td>
@@ -87,6 +111,43 @@ export const InventoryManager: React.FC = () => {
             {items.length === 0 && (
                 <div className="text-center py-20 border border-dashed border-white/10 rounded-3xl bg-black">
                     <p className="text-gray-600 text-[10px] font-black uppercase tracking-widest">Sin materiales registrados</p>
+                </div>
+            )}
+
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
+                    <div className="bg-[#050505] border border-white/10 w-full max-w-md rounded-3xl p-8 space-y-6 shadow-2xl">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-black text-brand italic uppercase tracking-tighter">Nuevo Insumo</h3>
+                            <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-white"><CloseIcon /></button>
+                        </div>
+                        
+                        <form onSubmit={handleAddItem} className="space-y-6">
+                            <div>
+                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Nombre del Material</label>
+                                <input type="text" value={newItem.item_name} onChange={e => setNewItem({ ...newItem, item_name: e.target.value })} required className="w-full bg-black p-5 rounded-2xl border border-white/10 font-bold" placeholder="Ej: Agujas 3RL" />
+                            </div>
+                            <div>
+                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Categoría</label>
+                                <input type="text" value={newItem.category} onChange={e => setNewItem({ ...newItem, category: e.target.value })} required className="w-full bg-black p-5 rounded-2xl border border-white/10 font-bold" placeholder="Ej: Agujas, Tintas..." />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Stock Actual</label>
+                                    <input type="number" min="0" value={newItem.quantity} onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })} required className="w-full bg-black p-5 rounded-2xl border border-white/10 font-bold text-center" />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Stock Mínimo</label>
+                                    <input type="number" min="0" value={newItem.min_stock} onChange={e => setNewItem({ ...newItem, min_stock: Number(e.target.value) })} required className="w-full bg-black p-5 rounded-2xl border border-white/10 font-bold text-center" />
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4 pt-4">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-5 bg-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest">Cancelar</button>
+                                <button type="submit" className="flex-1 py-5 bg-brand text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand/20">Guardar</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
         </div>

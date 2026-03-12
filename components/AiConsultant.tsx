@@ -60,7 +60,6 @@ export const AiConsultant: React.FC = () => {
     const [prompt, setPrompt] = useState<string>('');
     const [conversation, setConversation] = useState<ConversationTurn[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
     const [selectedImage, setSelectedImage] = useState<{ data: string, mimeType: string, preview: string } | null>(null);
     
     const conversationEndRef = useRef<HTMLDivElement>(null);
@@ -96,7 +95,6 @@ export const AiConsultant: React.FC = () => {
         }
         
         setIsLoading(true);
-        setError(null);
         
         const userTurn: ConversationTurn = { 
             role: 'user', 
@@ -117,7 +115,7 @@ export const AiConsultant: React.FC = () => {
             if (err.message?.includes("Requested entity was not found")) {
                 await (window as any).aistudio.openSelectKey();
             }
-            setError('Error en la consultoría. Los modelos Pro requieren una API Key de pago configurada.');
+            alert('Error en la consultoría. Los modelos Pro requieren una API Key de pago configurada.');
             setConversation(prev => prev.slice(0, -1));
             console.error(err);
         } finally {

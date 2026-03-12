@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabase';
 import { Review } from '../types';
-import { Spinner, CheckIcon } from './Icons';
+import { Spinner } from './Icons';
 
 export const Reviews: React.FC<{ username: string, isAdmin?: boolean }> = ({ username, isAdmin }) => {
     const [reviews, setReviews] = useState<Review[]>([]);

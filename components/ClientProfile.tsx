@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabase';
-import { Client } from '../types';
 import { Spinner, UserIcon, CheckIcon, FlashIcon, PencilIcon, SaveIcon, CloseIcon, EyeIcon, EyeOffIcon } from './Icons';
 
 export const ClientProfile: React.FC<{ username: string }> = ({ username }) => {
@@ -24,7 +23,7 @@ export const ClientProfile: React.FC<{ username: string }> = ({ username }) => {
 
     const fetchProfile = async () => {
         setLoading(true);
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('clients')
             .select('*')
             .eq('username', username)

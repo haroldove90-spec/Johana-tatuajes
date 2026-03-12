@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../utils/supabase';
 import { FlashSet } from '../types';
-import { Spinner, PlusIcon, CloseIcon, UploadIcon, CheckIcon } from './Icons';
+import { Spinner, PlusIcon, CloseIcon, CheckIcon } from './Icons';
 
 export const FlashCatalog: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     const [items, setItems] = useState<FlashSet[]>([]);
