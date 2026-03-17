@@ -30,6 +30,9 @@ export const AiDesigner: React.FC = () => {
                     model: 'gemini-2.5-flash-image',
                     contents: {
                         parts: [{ text: fullPrompt }]
+                    },
+                    config: {
+                        imageConfig: { aspectRatio: "1:1" }
                     }
                 });
                 
@@ -42,9 +45,13 @@ export const AiDesigner: React.FC = () => {
                 }
             }
             
+            if (newImages.length === 0) {
+                throw new Error('No se generaron imágenes. Intenta con otro prompt.');
+            }
+            
             setImages(newImages);
         } catch (err: any) {
-            console.error(err);
+            console.error("Error generating images:", err);
             setError(`Error: ${err.message || 'Error al generar los diseños. Por favor, intenta de nuevo.'}`);
         } finally {
             setIsLoading(false);

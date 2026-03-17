@@ -4,24 +4,40 @@ import { GoogleGenAI } from "@google/genai";
 export const getAiClient = () => {
   let apiKey = '';
   
+  // 1. Intentar usar variable estándar de Vite (para Vercel, Netlify, etc.)
   try {
-    // Vite statically replaces this if it exists
-    apiKey = process.env.GEMINI_API_KEY as string;
+    // @ts-ignore
+    apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   } catch (e) {
-    // Ignore ReferenceError if process is not defined
+    // Ignorar si no existe
+  }
+
+  // 2. Intentar usar variables inyectadas por AI Studio
+  if (!apiKey || apiKey === 'undefined') {
+    try {
+      apiKey = process.env.GEMINI_API_KEY as string;
+    } catch (e) {
+      // Ignore ReferenceError if process is not defined
+    }
   }
 
   if (!apiKey || apiKey === 'undefined') {
     try {
-      // Vite statically replaces this if the user selected a key
       apiKey = process.env.API_KEY as string;
     } catch (e) {
       // Ignore ReferenceError
     }
   }
   
+  // Debug log (enmascarado por seguridad) para saber si la llave se está leyendo
+  if (apiKey && apiKey !== 'undefined') {
+    console.log("API Key detectada: " + apiKey.substring(0, 4) + "..." + apiKey.substring(apiKey.length - 4));
+  } else {
+    console.error("No se detectó ninguna API Key en el entorno.");
+  }
+
   if (!apiKey || apiKey === 'undefined') {
-    throw new Error("No se encontró una API Key válida. Si estás en la versión publicada, asegúrate de configurar las variables de entorno.");
+    throw new Error("No se encontró una API Key válida. Si estás en Vercel, asegúrate de agregar VITE_GEMINI_API_KEY en las variables de entorno de tu proyecto y hacer un REDEPLOY.");
   }
   return new GoogleGenAI({ apiKey });
 };
