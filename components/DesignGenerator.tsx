@@ -25,10 +25,12 @@ export const DesignGenerator: React.FC = () => {
         }
 
         if (quality === 'pro') {
-            const hasKey = await (window as any).aistudio.hasSelectedApiKey();
-            if (!hasKey) {
-                await (window as any).aistudio.openSelectKey();
-                // Proseguir asumiendo que el usuario seleccionó la llave
+            if (typeof window !== 'undefined' && (window as any).aistudio) {
+                const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+                if (!hasKey) {
+                    await (window as any).aistudio.openSelectKey();
+                    // Proseguir asumiendo que el usuario seleccionó la llave
+                }
             }
         }
 
@@ -39,9 +41,14 @@ export const DesignGenerator: React.FC = () => {
         try {
             const designs = await generateTattooDesigns(prompt, quality);
             setResults(designs);
-        } catch (err) {
-            setError('Error en la generación. Los modelos Pro requieren una API Key de pago.');
-            console.error(err);
+        } catch (err: any) {
+            console.error("Error generating design:", err);
+            if (quality === 'pro' && err.message && err.message.includes('Requested entity was not found') && typeof window !== 'undefined' && (window as any).aistudio) {
+                setError('La API Key seleccionada no es válida o no tiene acceso. Por favor, selecciona otra.');
+                await (window as any).aistudio.openSelectKey();
+            } else {
+                setError(`Error en la generación: ${err.message || 'Error desconocido'}. ${quality === 'pro' ? 'Asegúrate de tener una API Key válida con facturación habilitada.' : ''}`);
+            }
         } finally {
             setIsLoading(false);
         }

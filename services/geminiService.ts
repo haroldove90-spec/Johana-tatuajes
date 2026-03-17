@@ -1,7 +1,30 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-export const getAiClient = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+export const getAiClient = () => {
+  let apiKey = '';
+  
+  try {
+    // Vite statically replaces this if it exists
+    apiKey = process.env.GEMINI_API_KEY as string;
+  } catch (e) {
+    // Ignore ReferenceError if process is not defined
+  }
+
+  if (!apiKey || apiKey === 'undefined') {
+    try {
+      // Vite statically replaces this if the user selected a key
+      apiKey = process.env.API_KEY as string;
+    } catch (e) {
+      // Ignore ReferenceError
+    }
+  }
+  
+  if (!apiKey || apiKey === 'undefined') {
+    throw new Error("No se encontró una API Key válida. Si estás en la versión publicada, asegúrate de configurar las variables de entorno.");
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 export const generateTattooOutline = async (base64Image: string, mimeType: string): Promise<string> => {
   const ai = getAiClient();
@@ -48,7 +71,7 @@ export const askAiConsultant = async (question: string, image?: { data: string, 
   }
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-pro-image-preview",
+    model: "gemini-3.1-pro-preview",
     contents: { parts },
     config: {
       systemInstruction: "Eres el consultor técnico senior de Bribiesca Studio. Analiza imágenes de piel o tatuajes con precisión médica/artística. Usa Google Search para validar normativas o tendencias actuales.",
@@ -77,26 +100,28 @@ export const generateTattooDesigns = async (prompt: string, quality: 'fast' | 'p
     const images = (response.candidates?.[0]?.content?.parts
       ?.filter(p => p.inlineData && p.inlineData.data)
       ?.map(p => p.inlineData!.data) || []) as string[];
+    
+    if (images.length === 0) {
+      throw new Error('No se generaron imágenes. Intenta con otro prompt.');
+    }
     return images;
   } else {
-    // Generate 3 images in parallel for fast quality
-    const promises = Array.from({ length: 3 }).map(() => 
-      ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: { parts: [{ text: fullPrompt }] },
-        config: {
-          imageConfig: { aspectRatio: "1:1" }
-        },
-      })
-    );
-    const responses = await Promise.all(promises);
-    const images: string[] = [];
-    responses.forEach(response => {
-      const parts = response.candidates?.[0]?.content?.parts;
-      if (parts) {
-        parts.filter(p => p.inlineData && p.inlineData.data).forEach(p => images.push(p.inlineData!.data as string));
-      }
+    // Generate 1 image for fast quality to avoid rate limits
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: { parts: [{ text: fullPrompt }] },
+      config: {
+        imageConfig: { aspectRatio: "1:1" }
+      },
     });
+    const parts = response.candidates?.[0]?.content?.parts;
+    const images: string[] = [];
+    if (parts) {
+      parts.filter(p => p.inlineData && p.inlineData.data).forEach(p => images.push(p.inlineData!.data as string));
+    }
+    if (images.length === 0) {
+      throw new Error('No se generaron imágenes. Intenta con otro prompt.');
+    }
     return images;
   }
 };

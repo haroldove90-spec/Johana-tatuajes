@@ -68,9 +68,9 @@ export const TattooPreviewer: React.FC = () => {
             const { base64, mimeType } = await fileToBase64(tattooFile);
             const resultBase64 = await generateTattooPreview(base64, mimeType, bodyPartText);
             setResultUrl(`data:image/jpeg;base64,${resultBase64}`);
-        } catch (err) {
-            setError('Hubo un error al generar la vista previa. Inténtalo de nuevo.');
-            console.error(err);
+        } catch (err: any) {
+            setError(`Hubo un error al generar la vista previa: ${err.message || 'Error desconocido'}. Inténtalo de nuevo.`);
+            console.error("Error generating preview:", err);
         } finally {
             setIsLoading(false);
         }

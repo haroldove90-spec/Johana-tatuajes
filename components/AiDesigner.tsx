@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GoogleGenAI } from '@google/genai';
+import { getAiClient } from '../services/geminiService';
 import { Spinner, DownloadIcon } from './Icons';
 
 type Style = 'Ninguno' | 'Realista' | 'Tradicional' | 'Sketch';
@@ -18,23 +18,21 @@ export const AiDesigner: React.FC = () => {
         setImages([]);
 
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+            const ai = getAiClient();
             const stylePrompt = style !== 'Ninguno' ? `, estilo de tatuaje ${style}` : '';
             const fullPrompt = `${prompt}${stylePrompt}, diseño de tatuaje, fondo blanco limpio, alta calidad`;
 
-            // Generate 4 images in parallel using Gemini 2.5 Flash Image
-            const promises = Array.from({ length: 4 }).map(() => 
-                ai.models.generateContent({
-                    model: 'gemini-2.5-flash-image',
-                    contents: fullPrompt,
-                })
-            );
-
-            const responses = await Promise.all(promises);
-            
             const newImages: string[] = [];
             
-            for (const response of responses) {
+            // Generate 4 images sequentially to avoid rate limits
+            for (let i = 0; i < 4; i++) {
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash-image',
+                    contents: {
+                        parts: [{ text: fullPrompt }]
+                    }
+                });
+                
                 if (response.candidates && response.candidates[0]?.content?.parts) {
                     for (const part of response.candidates[0].content.parts) {
                         if (part.inlineData && part.inlineData.data) {
@@ -45,9 +43,9 @@ export const AiDesigner: React.FC = () => {
             }
             
             setImages(newImages);
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError('Error al generar los diseños. Por favor, intenta de nuevo.');
+            setError(`Error: ${err.message || 'Error al generar los diseños. Por favor, intenta de nuevo.'}`);
         } finally {
             setIsLoading(false);
         }

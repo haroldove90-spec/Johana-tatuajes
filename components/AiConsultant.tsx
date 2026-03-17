@@ -88,10 +88,12 @@ export const AiConsultant: React.FC = () => {
         if (!trimmedPrompt && !selectedImage) return;
 
         // Check for mandatory API key selection for Gemini 3 Pro series
-        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
-        if (!hasKey) {
-            await (window as any).aistudio.openSelectKey();
-            // Proceeding assuming key selection was successful as per guidelines race condition rule
+        if (typeof window !== 'undefined' && (window as any).aistudio) {
+            const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+            if (!hasKey) {
+                await (window as any).aistudio.openSelectKey();
+                // Proceeding assuming key selection was successful as per guidelines race condition rule
+            }
         }
         
         setIsLoading(true);
@@ -112,7 +114,7 @@ export const AiConsultant: React.FC = () => {
             setConversation(prev => [...prev, { role: 'model', content: response.text, sources: response.sources }]);
         } catch (err: any) {
             // Handle specific API key error by resetting selection
-            if (err.message?.includes("Requested entity was not found")) {
+            if (err.message?.includes("Requested entity was not found") && typeof window !== 'undefined' && (window as any).aistudio) {
                 await (window as any).aistudio.openSelectKey();
             }
             alert('Error en la consultoría. Los modelos Pro requieren una API Key de pago configurada.');

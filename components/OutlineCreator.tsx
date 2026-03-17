@@ -61,9 +61,9 @@ export const OutlineCreator: React.FC = () => {
             const { base64, mimeType } = await fileToBase64(sourceFile);
             const resultBase64 = await generateTattooOutline(base64, mimeType);
             setResultUrl(`data:image/jpeg;base64,${resultBase64}`);
-        } catch (err) {
-            setError('Hubo un error al generar el trazo. Inténtalo de nuevo.');
-            console.error(err);
+        } catch (err: any) {
+            setError(`Hubo un error al generar el trazo: ${err.message || 'Error desconocido'}. Inténtalo de nuevo.`);
+            console.error("Error generating outline:", err);
         } finally {
             setIsLoading(false);
         }
