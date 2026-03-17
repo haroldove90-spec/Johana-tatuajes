@@ -79,8 +79,8 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             if (authMode === 'login') {
                 // Credenciales de Administrador Especiales
                 const adminCreds = [
-                    { u: 'johana_admin', p: '123_admin' },
-                    { u: 'harold', p: '123_admin' }
+                    { u: 'joha_bribiesca', p: '123admin' },
+                    { u: 'harold_anguiano', p: '123admin' }
                 ];
 
                 const specialAdmin = adminCreds.find(c => c.u === cleanUsername && c.p === password);
